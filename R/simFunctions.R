@@ -1,0 +1,175 @@
+#' Create single subject for VWP trial
+#'
+#' @param fnct character vector indicatin curve type
+#'
+#' @returns This creates parameters for an individual subject,
+#' returning the fixation curve parameters, as well as eye  movement
+#' parameters for both standard and FBS+T
+#' @export
+makeSubject <- function(fnct = "logistic") {
+
+  if (fnct == "logistic") {
+    bb <- baseParams[fn == 1, ]
+    fn <- logistic
+  } else {
+    bb <- baseParams[fn == 2, ]
+    fn <- doubleGauss
+  }
+
+  ## Parameters for the curve, right now, just logistic
+  subPars <- vector("numeric", nrow(bb))
+  subPars[] <- Inf
+  maxFix <- 2
+  while (maxFix > 1) {
+    while (any(bb[, subPars <= min | subPars >= max ])) {
+      ## Missed opportunity here to use correlation maybe mvtnorm?
+      subPars <- bb[, rnorm(nrow(bb))*sd + mean]
+    }
+    maxFix <- max(fn(subPars, times))
+  }
+
+
+  ### This portion below independent of fixation curve
+  ## Eye movement parameters
+  # bw subject mean / bw sub sd / mean trial x trial sd wn sub / sd of trial x sd of sub
+  baseEMparams <- matrix(c(204.73, 32.63, 96.55, 24.57,
+                           360.28, 65.78, 195.11, 30.04),
+                         byrow = TRUE, ncol = 4)
+
+
+  ## For eye movement, i.e., eyemovementSubject (missing FBS+T)
+  emSub <- vector("numeric", 2L)
+  emSub[1] <- rgamma(1, shape = baseEMparams[1,1]^2 / baseEMparams[1,2]^2,
+                     scale = baseEMparams[1,2]^2/baseEMparams[1,1])
+  emSub[2] <- rgamma(1, shape = baseEMparams[1,3]^2 / baseEMparams[1,4]^2,
+                     scale = baseEMparams[1,4]^2/baseEMparams[1,3])
+
+  ## For FBS+T (i.e., these are target looks, which are slightly longer)
+  emSubT <- vector("numeric", 2L)
+  emSubT[1] <- rgamma(1, shape = baseEMparams[2,1]^2 / baseEMparams[2,2]^2,
+                      scale = baseEMparams[2,2]^2/baseEMparams[2,1])
+  emSubT[2] <- rgamma(1, shape = baseEMparams[2,3]^2 / baseEMparams[2,4]^2,
+                      scale = baseEMparams[2,4]^2/baseEMparams[2,3])
+
+  return(list(pars = subPars, em = emSub, emT = emSubT, fn = fnct))
+}
+
+
+## Run set of simulation on single subject
+#' Run simulation for single subject
+#'
+#' @param fnct character vector indicatin curve type
+#' @param ntrials number of vwp trials per subject
+#' @param fbst use FBS+T assumption or not
+#'
+#' @returns This runs simluation for single subject, returns a list
+#' containing information on subject, as well as trial data
+#' @export
+runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
+
+  ## Set up parameter stuff for subject
+  subInfo <- makeSubject(fnct)
+  pars <- subInfo$pars
+  em <- subInfo$em
+  emT <- subInfo$emT # for target
+  rg <- function() rgamma(1, em[1]^2/em[2]^2, scale = em[2]^2/em[1])
+  rgT <- function() rgamma(1, emT[1]^2/emT[2]^2, scale = emT[2]^2/emT[1])
+
+  ## Assign curve fitting function
+  if (fnct == "logistic") {
+    fn <- logistic
+  } else {
+    fn <- doubleGauss
+  }
+
+  #trialDataList <- vector("list", length = ntrials)
+
+  ## Go through trials
+  trialDataList <- mclapply(seq_len(ntrials), function(i) {
+    trialdata <- data.table(trial = i,
+                            times = times,
+                            looks = 0L * times[],
+                            #saccade = 0L,
+                            saccadenum = 0L)
+
+    ## Step 1 of looks
+    curtime <- min(times) - runif(1)*em[1] # current time
+    lasttime <- curtime - rg() - runif(1)*em[1]
+
+    # ## What are we looking at *first*
+    # currProb <- fn(pars, lasttime)
+    # targ <- runif(1) <= currProb
+
+    while (curtime < max(times)) {
+
+      # ? integral value instead?
+      currProb <- fn(pars, lasttime)
+      targ <- runif(1) <= currProb
+
+      # ## Only investigate if not already looking at target
+      # if (!targ) {
+      #   currProb <- fn(pars, lasttime)
+      #   targ <- runif(1) <= currProb
+      # } else {
+      #   targ <- FALSE # were looking at target on last saccade so now were not
+      # }
+      #
+      ## Duration depends on looking at target or not
+      currdur <- ifelse(fbst & targ, rg(), rgT())
+
+      # while (currdur + curtime < 0) {
+      #   currdur <- ifelse(fbst & targ, rg(), rgT())
+      # }
+
+      ## update trial data
+      idx <- which(times >= curtime & times <= curtime + currdur)
+      trialdata[idx, looks := targ]
+      sac_idx <- which.min(abs(times - curtime)) # time less current closest to zero
+      #trialdata[sac_idx, saccade := 1]
+      trialdata[sac_idx:nrow(trialdata), saccadenum := saccadenum + 1L]
+      lasttime <- curtime
+      curtime <- curtime + currdur
+    }
+    trialdata
+    ## this first index is actually wrong
+    #trialdata[1, saccade := 0]
+    #trialDataList[[i]] <- trialdata
+  }, mc.cores = detectCores()-1L)
+
+  ## Aggregate to single DT
+  tt <- rbindlist(trialDataList)
+  return(list(subInfo = subInfo, trialData = tt))
+
+}
+
+
+
+
+
+#' Aggregates raw trial data into vwp style whatever
+#'
+#' @param x A subject run from simulation
+#'
+#' @returns data.table with looks and proportions
+aggregateSub <- function(x) {
+  dat <- copy(x$trialData)
+  dat[, looks := mean(looks), by = times]
+  dat[, `:=`(trial = NULL, saccadenum = NULL)]
+  dat <- unique(dat)
+}
+
+#' Get start/end times from trial data for saccades
+#'
+#' @param x A subject run from simulation
+#'
+#' @returns data.table with entries being saccades and times
+buildSaccadeSub <- function(x) {
+  dat <- copy(x$trialData)
+
+  ## Find start and end times
+  dat[, `:=`(starttime = min(times), endtime = max(times)),
+      by = .(trial, saccadenum)]
+  dat[, `:=`(times = NULL, dur = endtime - starttime)]
+  dat <- unique(dat)
+}
+
