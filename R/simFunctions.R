@@ -28,6 +28,7 @@ makeSubject <- function(fnct = "logistic") {
     maxFix <- max(fn(subPars, times))
   }
 
+  names(subPars) <- bb$param
 
   ### This portion below independent of fixation curve
   ## Eye movement parameters
@@ -50,6 +51,9 @@ makeSubject <- function(fnct = "logistic") {
                       scale = baseEMparams[2,2]^2/baseEMparams[2,1])
   emSubT[2] <- rgamma(1, shape = baseEMparams[2,3]^2 / baseEMparams[2,4]^2,
                       scale = baseEMparams[2,4]^2/baseEMparams[2,3])
+
+  names(emSub) <- c("meanEM", "sdEM")
+  names(emSubT) <- c("meanEM_T", "sdEM_T")
 
   return(list(pars = subPars, em = emSub, emT = emSubT, fn = fnct))
 }
@@ -115,7 +119,7 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
       # }
       #
       ## Duration depends on looking at target or not
-      currdur <- ifelse(fbst & targ, rg(), rgT())
+      currdur <- ifelse(fbst & targ, rgT(), rg())
 
       # while (currdur + curtime < 0) {
       #   currdur <- ifelse(fbst & targ, rg(), rgT())
@@ -123,17 +127,16 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
 
       ## update trial data
       idx <- which(times >= curtime & times <= curtime + currdur)
+      if (length(idx) == 0) next
       trialdata[idx, looks := targ]
-      sac_idx <- which.min(abs(times - curtime)) # time less current closest to zero
+      #sac_idx <- which.min(abs(times - curtime)) # time less current closest to zero
       #trialdata[sac_idx, saccade := 1]
-      trialdata[sac_idx:nrow(trialdata), saccadenum := saccadenum + 1L]
+      trialdata[idx[1]:nrow(trialdata), saccadenum := saccadenum + 1L]
       lasttime <- curtime
       curtime <- curtime + currdur
     }
     trialdata
-    ## this first index is actually wrong
-    #trialdata[1, saccade := 0]
-    #trialDataList[[i]] <- trialdata
+
   }, mc.cores = detectCores()-1L)
 
   ## Aggregate to single DT
@@ -141,8 +144,6 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
   return(list(subInfo = subInfo, trialData = tt))
 
 }
-
-
 
 
 

@@ -1,0 +1,131 @@
+---
+date: "10/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = 'center')
+```
+
+## Setup
+
+Idea is to try to evalute the probability of looking at target ($V$ for visual target) at a given time $T = t$. Based on the simulated data from Bob's code, we see that the duration of fixations is gamma distributed, and the onset time of a fixation is relatively uniform
+
+```{r, fig.align='center'}
+suppressPackageStartupMessages(library(eyetrackSim))
+library(bdots)
+library(lattice)
+
+## create subject
+sub <- runSub()
+subfix <- buildSaccadeSub(sub)
+par(mfrow = c(1, 2))
+hist(subfix$dur)
+hist(subfix$starttime)
+```
+
+We might also be interested in looking at numbers of saccades as well as onset time for each fixation. This is only with a single subject, but running on a higher number gives a distribution of max saccades per trial to be approximately binomial with N = 14, p $\approx$ 9.6/14. The graph looks better there too
+
+```{r}
+subfix[, max(saccadenum), by = trial]$V1 |> histogram()
+histogram(~starttime | as.factor(saccadenum), data = subfix)
+```
+
+A probably more technically correct but more difficult to work out setup probably goes like this. Letting $V$ be the event that we look at target,  $N$ being the total fixations with a trial, $I_j$ being the interval of the $j$th fixation (recalling that probability of looking at target roughly equal to beginning of this trial (and actually, it's slightly worse: the probability of looking at a target at a particular time is determined at the beginning of the fixation interval *prior* to the current one)), we have
+
+$$
+P(V|T = t, \#I = N) = \sum^N_j P(V|T = min(I_j)) P(t \in I_j)
+$$
+What this does not capture is that, within a particular trial, what we have instead are intervals. Perhaps most correct would be a hierarchical model in which
+
+1. Draw fixation intervals $I_j$ until $max(I_j) >= max(time)$
+2. At the onset of each interval, calculate probability of looking at target, compare against uniform
+3. etc. 
+
+Even then, this is in the most simplified of cases. 
+
+At any rate, since the onset time seems to be uniformally distributed, and the probability of looking at the target at time $T = t$ is determined prior to $t$, what I do here instead to approximate this is:
+
+1. For each time $t \in [0, 2000]$, sample a single duration time from the collection of duration times estimated from the simulation
+2. Integrate the fixation curve $f$ over that duration period (well, the sum for now), $d$, giving 
+
+$$
+P(V | T = t) = \int_{t-d}^t f(x) \ dx
+$$
+3. Do this 300 times and find the average probability of fixation at time $t$ for the whole range
+
+I did this sort of straight, with an additional adjustment for oculomotor delay (which I think is unnecessary in this case) and plotted the results. Rather than taking each time between 0ms and 2000ms, I iterated by 4ms, which is what was done in the sim and in the irl eyetracking
+
+```{r}
+## single logistic based on this sub
+ll <- function(t) logistic(sub$subInfo$pars, t)
+
+## Create sample proportion with integration
+times <- seq(0, 2000, 4)
+fix <- matrix(NA, nrow = length(times), ncol = 300)
+
+for (j in seq_len(300)) {
+  for (i in seq_along(times)) {
+    tt <- times[i]
+    # dur <- 200
+    dur <- sample(subfix$dur[subfix$dur != 0], 1)
+    vec <- (tt-dur):tt
+    #fix[i, j] <- mean(ll(vec))
+    fix[i, j] <- integrate(ll, lower = vec[1], upper = vec[length(vec)])$value / diff(range(vec))
+  }
+}
+rr <- rowMeans(fix)
+
+```
+
+```{r, echo = FALSE}
+## add oculomotor delay (2ooms)
+rr_adj <- c(rr[-c(1:50)], rep(rr[length(rr)], 50))
+
+## Actual times based on curve
+real <- ll(times)
+
+plot(times, real, type = 'l', col = 'green', lwd = 2, ylim = c(-0.1, 0.9))
+lines(times, rr, lwd = 2, col = 'blue')
+lines(times, rr_adj, lwd = 2, col = 'purple')
+lines(times, real - rr, lwd = 2, col = 'red')
+lines(times, rr_adj - rr, lwd = 2, lty = 2, col = 'red')
+```
+
+For funsies, I ran this through bdots as well to get estimate of parameters. Of course, there is some discrepancy between true values and those from bdots given the discretization of time, but otherwise, these are pretty close, and we can see that estimates from the iterated sum are off in ways not inconsistent with what bob presented in his paper.
+
+Here, I ran each of these through bdots to get an estiamted fit. These are based, respectively, on
+
+1. The actual parameters used to seed the simulation
+2. The fit of the logistic curve using the above parameters, without simulation
+3. The fit of the fixation curve generation via simulation
+4. The estimate made by integrating
+5. Above, except with oculomotor delay
+
+```{r, echo = FALSE}
+simLooks <- aggregateSub(sub)
+simLooks[, id := 4]
+simLooks <- simLooks[, .(id, times, looks)]
+simLooks[, group := "a"]
+looks <- list(real, rr, rr_adj)
+tt <- lapply(1:3, function(i) {
+  dt <- data.table(times = times,
+                   id = i,
+                   looks = looks[[i]],
+                   group = "a")
+})
+dt <- rbindlist(tt)
+dt <- rbind(dt, simLooks)
+fit <- bdotsFit(y = "looks",
+                subject = "id",
+                group = "group",
+                curveType = logistic(),
+                time = "times",
+                dat = dt,
+                cores = detectCores() - 1L)
+
+mat <- coef(fit) # somehow, one of these is very backwards?
+mat <- rbind(sub$subInfo$pars[c(1,2,4,3)], mat)
+rownames(mat) <- c("simPars", "trueLogistic", "integrate", "integrate_adj", "simulation")
+mat[c(1, 2, 5, 3, 4), ]
+```
