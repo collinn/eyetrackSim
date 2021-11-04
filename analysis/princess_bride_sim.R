@@ -39,20 +39,6 @@
 # lines(times, looks, col = 'blue', lwd = 2)
 # lines(times, fit_l, col = 'green', lwd = 2)
 
-## Trying running simulation
-library(eyetrackSim)
-## fbs, ntrials = 300, logitic
-# about 53 minutes
-system.time({
-  sim <- runSim(nsub = 1000L)
-  sim_fbst <- runSim(nsub = 1000L, fbst = TRUE)
-
-  sim_co <- runSim(nsub = 1000L, fnct = "doubleGauss")
-  sim_co_fbst <- runSim(nsub = 1000L, fbst = TRUE, fnct = "doubleGauss")
-})
-
-save.image(file = "trialSim.RData")
-
 #
 # tt <- runSim(nsub = 1)
 #
@@ -72,4 +58,114 @@ save.image(file = "trialSim.RData")
 # tt2 <- runSub(fbst = TRUE)
 # fix2 <- buildSaccadeSub(tt2)
 # td2 <- aggregateSub(tt2)
+
+## Trying running simulation
+library(eyetrackSim)
+## fbs, ntrials = 300, logitic
+# about 53 minutes
+system.time({
+  #sim <- runSim(nsub = 1000L)
+  #sim_fbst <- runSim(nsub = 1000L, fbst = TRUE)
+
+  sim_co <- runSim(nsub = 1000L, fnct = "doubleGauss")
+  sim_co_fbst <- runSim(nsub = 1000L, fbst = TRUE, fnct = "doubleGauss")
+})
+
+save.image(file = "trialSim_dg.RData")
+#load("trialSim.RData")
 #
+# sim <- runSim(nsub = 750L)
+ss <- copy(sim)
+## Basically reproduce bob's table for each
+pbcheck <- function(ss) {
+
+  ss <- copy(ss)
+  fnx <- ss$subPars$fn
+  if (fnx == "logistic") {
+    fn <- bdots::logistic
+  } else {
+    fn <- bdots::doubleGauss2
+  }
+
+  dat <- copy(ss$trialData)
+  dat[, group := "grp"]
+
+  if (fnx != "logistic") {
+    test <- split(dat, by = "id")
+    badid <- vector("numeric", length = 1L)
+    for (i in seq_along(test)) {
+      rr <-  bdots:::dgaussPars(test[[i]], "looks", "times", TRUE)
+      if (length(rr) != 6) badid <- c(badid, i)
+    }
+    if (length(badid) > 1) {
+      bad <- TRUE
+      badid <- badid[2:length(badid)]
+      dat <- dat[!(id %in% badid), ]
+    }
+  }
+
+
+  fits <- bdotsFit(data = dat,
+                   y = "looks",
+                   time = "times",
+                   subject = "id",
+                   group = "group",
+                   curveType = fn(),
+                   cores = detectCores() - 1L)
+
+
+
+  hmm <- sapply(split(fits, by = "id"), function(x) {
+    if (x$fitCode == 6) return(FALSE)
+    obj <- x[["fit"]][[1]]
+    fv <- fitted(obj)
+    res <- residuals(obj)
+    cor(fv, fv+res) > 0.8
+  })
+
+  fits <- fits[hmm, ]
+
+
+  # fits <- bdotsFit(df,
+  #                  y = "looks",
+  #                  time = "time",
+  #                  subject = "id",
+  #                  group = "group",
+  #                  curveType = cc(),
+  #                  cores = 1L)
+
+  fits <- fits[fitCode %in% c(0,1,3), ]
+
+  fit_coef <- coef(fits)
+  sim_coef <- ss$subPars$pars
+
+  sim_coef <- sim_coef[id %in% fits$id, ]
+
+
+
+  ## Clean up
+  sim_coef[, id := NULL]
+  sim_coef <- as.matrix(sim_coef)
+
+  if (fnx == "logistic") {
+    bob_idx <- c("mini", "peak", "cross", "slope")
+    sim_coef <- sim_coef[, bob_idx]
+    fit_coef <- fit_coef[, bob_idx]
+  }
+
+
+  colMeans(sim_coef)
+  colMeans(fit_coef)
+  diag(cor(sim_coef, fit_coef))
+  cor(fit_coef)
+
+  return(list(simcoef = sim_coef, fitcoef = fit_coef, fits = fits,
+              nvalid = sum(hmm)))
+}
+
+sims <- list(sim, sim_fbst, sim_co, sim_co_fbst)
+
+sims <- vector("list", 4)
+sims[[1]] <- pbcheck(sim)
+sims[[2]] <- pbcheck(sim_co)
+sims[[3]] <- pbcheck(sim_co)

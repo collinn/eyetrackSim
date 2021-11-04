@@ -9,11 +9,11 @@
 makeSubject <- function(fnct = "logistic") {
 
   if (fnct == "logistic") {
-    bb <- baseParams[fn == 1, ]
-    fn <- logistic
+    bb <- copy(baseParams[fn == 1, ])
+    fn <- logistic_f
   } else {
-    bb <- baseParams[fn == 2, ]
-    fn <- doubleGauss
+    bb <- copy(baseParams[fn == 2, ])
+    fn <- doubleGauss_f
   }
 
   ## Parameters for the curve, right now, just logistic
@@ -81,9 +81,9 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
 
   ## Assign curve fitting function
   if (fnct == "logistic") {
-    fn <- logistic
+    fn <- logistic_f
   } else {
-    fn <- doubleGauss
+    fn <- doubleGauss_f
   }
 
   #trialDataList <- vector("list", length = ntrials)
@@ -119,7 +119,7 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
       # }
       #
       ## Duration depends on looking at target or not
-      currdur <- ifelse(fbst & targ, rgT(), rg())
+      (currdur <- ifelse(fbst & targ, rgT(), rg()))
 
       # while (currdur + curtime < 0) {
       #   currdur <- ifelse(fbst & targ, rg(), rgT())

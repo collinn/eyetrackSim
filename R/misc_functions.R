@@ -3,11 +3,15 @@
 #######################
 
 ## Logistic function
-logistic <- function(p, t) {
-  p[1] + (p[2]-p[1]) / (1 + exp(4*p[4]*((p[3]-t)/(p[2]-p[1]))))
+logistic_f <- function(p, t) {
+  b0 <- p[1] # base
+  b1 <- p[2] # max
+  sl <- p[3] # slope
+  xo <- p[4] # crossover
+  b0 + (b1-b0) / (1 + exp(4*sl*((xo-t)/(b1-b0))))
 }
 
-doubleGauss <- function(p, t) {
+doubleGauss_f <- function(p, t) {
   mu <- p[1]
   ht <- p[2]
   s1 <- p[3]
@@ -15,8 +19,8 @@ doubleGauss <- function(p, t) {
   b1 <- p[5]
   b2 <- p[6]
 
-  lhs <- (t <= mu) * (ht-b1) * exp((t - mu)^2/(-2*s1)) + b1
-  rhs <- (t > mu) * (ht-b2) * exp((t - mu)^2/(-2*s2)) + b2
+  lhs <- (t < mu) * (ht-b1) * exp((t - mu)^2/(-2*s1^2)) + b1
+  rhs <- (t >= mu) * (ht-b2) * exp((t - mu)^2/(-2*s2^2)) + b2
   lhs+rhs
 }
 
