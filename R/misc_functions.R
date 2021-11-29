@@ -24,6 +24,12 @@ doubleGauss_f <- function(p, t) {
   lhs+rhs
 }
 
+linear_f <- function(p, t) {
+  b <- p[1]
+  m <- p[2]
+  m*t + b
+}
+
 
 
 

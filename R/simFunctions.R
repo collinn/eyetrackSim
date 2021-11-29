@@ -11,22 +11,27 @@ makeSubject <- function(fnct = "logistic") {
   if (fnct == "logistic") {
     bb <- copy(baseParams[fn == 1, ])
     fn <- logistic_f
-  } else {
+  } else if (fnct == "doubleGauss") {
     bb <- copy(baseParams[fn == 2, ])
     fn <- doubleGauss_f
+  } else if (fnct == "linear") {
+    bb <- copy(baseParams[fn == 3, ])
+    fn <- linear_f
   }
+
 
   ## Parameters for the curve, right now, just logistic
   subPars <- vector("numeric", nrow(bb))
   subPars[] <- Inf
   maxFix <- 2
-  while (maxFix > 1) {
+  while (maxFix > 1 | maxFix < 0.6) { # added minimum independent of mbob
+    subPars[] <- Inf
     while (any(bb[, subPars <= min | subPars >= max ])) {
-      ## Missed opportunity here to use correlation maybe mvtnorm?
       subPars <- bb[, rnorm(nrow(bb))*sd + mean]
     }
     maxFix <- max(fn(subPars, times))
   }
+  (maxFix)
 
   names(subPars) <- bb$param
 
@@ -82,8 +87,10 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
   ## Assign curve fitting function
   if (fnct == "logistic") {
     fn <- logistic_f
-  } else {
+  } else if (fnct == "doubleGauss") {
     fn <- doubleGauss_f
+  }  else if (fnct == "linear") {
+    fn <- linear_f
   }
 
   #trialDataList <- vector("list", length = ntrials)

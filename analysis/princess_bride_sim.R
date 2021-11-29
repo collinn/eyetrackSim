@@ -71,11 +71,14 @@ system.time({
   sim_co_fbst <- runSim(nsub = 1000L, fbst = TRUE, fnct = "doubleGauss")
 })
 
+
+sim_l <- runSim(nsub = 10L, fnct = "linear")
+
 save.image(file = "trialSim_dg.RData")
 #load("trialSim.RData")
 #
 # sim <- runSim(nsub = 750L)
-ss <- copy(sim)
+ss <- copy(sim_l)
 ## Basically reproduce bob's table for each
 pbcheck <- function(ss) {
 
@@ -83,14 +86,16 @@ pbcheck <- function(ss) {
   fnx <- ss$subPars$fn
   if (fnx == "logistic") {
     fn <- bdots::logistic
-  } else {
+  } else if (fnx == "doubleGauss") {
     fn <- bdots::doubleGauss2
+  } else if (fnx == "linear") {
+    fn <- bdots::linear
   }
 
   dat <- copy(ss$trialData)
   dat[, group := "grp"]
 
-  if (fnx != "logistic") {
+  if (fnx == "doubleGauss") {
     test <- split(dat, by = "id")
     badid <- vector("numeric", length = 1L)
     for (i in seq_along(test)) {

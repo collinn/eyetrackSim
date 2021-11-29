@@ -32,3 +32,26 @@ baseParams <- structure(list(fn = c(1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L),
                         row.names = c(NA, -10L),
                         class = c("data.table", "data.frame"))
 colnames(baseParams) <- c("fn", "param", "mean", "sd", "min", "max")
+
+## Add linear terms
+
+## Estimate values for slope and intercept
+# bb <- rnorm(5000, 0.05, 0.05)
+# bb <- bb[bb > 0 & bb < 0.1]
+#
+# ep <- rnorm(length(bb), 1-bb, sd(bb))
+# idx <- which(ep <= 1)
+# ep <- ep[idx]
+# bb <- bb[idx]
+#
+# mm <- (ep-bb)/2000
+
+
+bp2 <- data.table(fn = c(3L, 3L),
+                  param = c("intercept", "slope"),
+                  mean = c(0.05, 0.0004444),
+                  sd = c(0.05, 0.0000268),
+                  min = c(0, 0.00035934),
+                  max = c(0.1, 0.0005))
+
+baseParams <- rbind(baseParams, bp2)
