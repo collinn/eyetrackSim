@@ -1,0 +1,341 @@
+---
+title: "Effects on Sample Density"
+date: "12/1/2021"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = 'center', fig.height = 8)
+```
+
+```{r, include = FALSE}
+library(eyetrackSim)
+library(bdots)
+
+getFits <- function(ss) {
+  ss <- copy(ss)
+  fnx <- ss$subPars$fn
+  if (fnx == "logistic") {
+    fn <- bdots::logistic
+  } else if (fnx == "doubleGauss") {
+    fn <- bdots::doubleGauss2
+  } else if (fnx == "linear") {
+    fn <- bdots::linear
+  }
+
+  dat <- copy(ss$trialData)
+  dat[, group := "grp"]
+
+  if (fnx == "doubleGauss") {
+    test <- split(dat, by = "id")
+    badid <- vector("numeric", length = 1L)
+    for (i in seq_along(test)) {
+      rr <-  bdots:::dgaussPars(test[[i]], "looks", "times", TRUE)
+      if (length(rr) != 6) badid <- c(badid, i)
+    }
+    if (length(badid) > 1) {
+      bad <- TRUE
+      badid <- badid[2:length(badid)]
+      dat <- dat[!(id %in% badid), ]
+    }
+  }
+  
+  if (fnx == "logistic") {
+     fits <- bdotsFit(data = dat,
+                   y = "looks",
+                   time = "times",
+                   subject = "id",
+                   group = "group",
+                   curveType = logistic(),
+                   cores = detectCores() - 1L)
+  } else if (fnx == "linear") {
+     fits <- bdotsFit(data = dat,
+                   y = "looks",
+                   time = "times",
+                   subject = "id",
+                   group = "group",
+                   curveType = linear(),
+                   cores = detectCores() - 1L)
+  } 
+
+
+  ## Remove bad fits
+  idx <- sapply(split(fits, by = "id"), function(x) {
+    if (x$fitCode == 6) return(FALSE)
+    obj <- x[["fit"]][[1]]
+    fv <- fitted(obj)
+    res <- residuals(obj)
+    cor(fv, fv+res) > 0.8
+  })
+
+  fits <- fits[idx, ]
+}
+
+## Coefficient matrix for simulation, based on valid fits
+# returns matrix
+getSimCoef <- function(ss, fits) {
+  ss <- copy(ss)
+  sim_coef <- ss$subPars$pars
+  sim_coef <- sim_coef[id %in% fits$id, ]
+  sim_coef[, id := NULL]
+  sim_coef <- as.matrix(sim_coef)
+}
+
+plotY <- function(idx, mm = NULL) {
+  oldpar <- par(mfrow = c(2,1))
+  on.exit(par(oldpar))
+  plot(times, fity[, idx], type = 'l', ylim = c(0, 1), lwd = 2,
+       main = paste0("Subject ", idx, "\n", mm))
+  lines(times, simy[, idx], type = 'l', col = 'steelblue', lwd = 2)
+  legend(x = 1300, y = 0.4, legend = c("Underlying", "bdots"),
+         col = c("steelblue", "black"), lty = 1, lwd = 2)
+  fix <- sim_l$fixations[id == idx & starttime != 0, ]
+  plot(density(fix$starttime), main = "saccade density")
+}
+```
+
+# Overview
+
+Here, we ran simulations with a linear and nonlinear underlying curve, including conditions for FBST = TRUE/FALSE.
+
+We then repeat simulations with nonlinear, removing the random saccade component and replacing it with saccades every 10ms and 50ms. We left the initial onset time and initial fixation to be random to prevent staggering. That way, for each subject's trial, the actual points sampled will differ, increasing sample space
+
+# Linear Simulation 
+
+## FBST = FALSE {.tabset}
+
+```{r}
+sim_l <- runSim(nsub = 2L, fnct = "linear", fbst = FALSE)
+
+fits <- getFits(sim_l)
+
+sim_coef <- getSimCoef(sim_l, fits)
+fit_coef <- coef(fits)
+
+## Consider now the *actual* curves
+fity <- sapply(split(fits, by = "id"), function(x) {
+  fitted(x[['fit']][[1]])
+})
+simy <- apply(sim_coef, 1, linear_f, t = times)
+
+mm <- "linear, FBST = FALSE"
+# for (i in 1:2) {
+#   plotY(i, mm)
+# }
+```
+
+### Sub 1
+
+```{r}
+plotY(1, mm)
+```
+
+### Sub 2
+
+```{r}
+plotY(2, mm)
+```
+
+## FBST = TRUE {.tabset}
+
+```{r}
+sim_l <- runSim(nsub = 2L, fnct = "linear", fbst = TRUE)
+
+fits <- getFits(sim_l)
+
+sim_coef <- getSimCoef(sim_l, fits)
+fit_coef <- coef(fits)
+
+## Consider now the *actual* curves
+fity <- sapply(split(fits, by = "id"), function(x) {
+  fitted(x[['fit']][[1]])
+})
+simy <- apply(sim_coef, 1, linear_f, t = times)
+
+mm <- "linear, FBST = TRUE"
+# for (i in 1:2) {
+#   plotY(i, mm)
+# }
+```
+
+### Sub 1
+
+```{r}
+plotY(1, mm)
+```
+
+### Sub 2
+
+```{r}
+plotY(2, mm)
+```
+
+# Logistic Simulation 
+
+## FBST=FALSE {.tabset}
+
+```{r}
+sim_l <- runSim(nsub = 4L, fnct = "logistic", fbst = FALSE)
+
+fits <- getFits(sim_l)
+
+sim_coef <- getSimCoef(sim_l, fits)
+fit_coef <- coef(fits)
+
+## Consider now the *actual* curves
+fity <- sapply(split(fits, by = "id"), function(x) {
+  fitted(x[['fit']][[1]])
+})
+simy <- apply(sim_coef, 1, logistic_f, t = times)
+
+mm <- "logistic, FBST = FALSE"
+# for (i in 1:4) {
+#   plotY(i, mm)
+# }
+```
+
+### Sub 1
+
+```{r}
+plotY(1, mm)
+```
+
+### Sub 2
+
+```{r}
+plotY(2, mm)
+```
+
+### Sub 3
+
+```{r}
+plotY(3, mm)
+```
+
+### Sub 4
+
+```{r}
+plotY(4, mm)
+```
+
+## FBST=TRUE {.tabset}
+
+```{r}
+sim_l <- runSim(nsub = 4L, fnct = "logistic", fbst = TRUE)
+
+fits <- getFits(sim_l)
+
+sim_coef <- getSimCoef(sim_l, fits)
+fit_coef <- coef(fits)
+
+## Consider now the *actual* curves
+fity <- sapply(split(fits, by = "id"), function(x) {
+  fitted(x[['fit']][[1]])
+})
+simy <- apply(sim_coef, 1, logistic_f, t = times)
+
+mm <- "logistic, FBST = TRUE"
+# for (i in 1:4) {
+#   plotY(i, mm)
+# }
+```
+
+### Sub 1
+
+```{r}
+plotY(1, mm)
+```
+
+### Sub 2
+
+```{r}
+plotY(2, mm)
+```
+
+### Sub 3
+
+```{r}
+plotY(3, mm)
+```
+
+### Sub 4
+
+```{r}
+plotY(4, mm)
+```
+
+
+# Density Sampling (logistic) 
+
+## d = 50 {.tabset}
+
+```{r}
+sim_l <- runSim_fixed(nsub = 2L, fnct = "logistic", sampDensity = 50L)
+
+fits <- getFits(sim_l)
+
+sim_coef <- getSimCoef(sim_l, fits)
+fit_coef <- coef(fits)
+
+## Consider now the *actual* curves
+fity <- sapply(split(fits, by = "id"), function(x) {
+  fitted(x[['fit']][[1]])
+})
+simy <- apply(sim_coef, 1, logistic_f, t = times)
+
+mm <- "logistic, sampDensity = 50"
+# for (i in 1:2) {
+#   plotY(i, mm)
+# }
+```
+
+### Sub 1
+
+```{r}
+plotY(1, mm)
+```
+
+### Sub 2
+
+```{r}
+plotY(2, mm)
+```
+
+## d = 10 {.tabset}
+
+```{r}
+sim_l <- runSim_fixed(nsub = 2L, fnct = "logistic", sampDensity = 10L)
+
+fits <- getFits(sim_l)
+
+sim_coef <- getSimCoef(sim_l, fits)
+fit_coef <- coef(fits)
+
+## Consider now the *actual* curves
+fity <- sapply(split(fits, by = "id"), function(x) {
+  fitted(x[['fit']][[1]])
+})
+simy <- apply(sim_coef, 1, logistic_f, t = times)
+
+mm <- "logistic, sampDensity = 10"
+# for (i in 1:2) {
+#   plotY(i, mm)
+# }
+```
+
+### Sub 1
+
+```{r}
+plotY(1, mm)
+```
+
+### Sub 2
+
+```{r}
+plotY(2, mm)
+```

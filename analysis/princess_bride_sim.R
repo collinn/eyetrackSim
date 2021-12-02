@@ -72,13 +72,14 @@ system.time({
 })
 
 
-sim_l <- runSim(nsub = 10L, fnct = "linear")
+sim_l <- runSim(nsub = 10L, fnct = "logistic", fbst = TRUE)
 
 save.image(file = "trialSim_dg.RData")
 #load("trialSim.RData")
 #
 # sim <- runSim(nsub = 750L)
 ss <- copy(sim_l)
+
 ## Basically reproduce bob's table for each
 pbcheck <- function(ss) {
 
@@ -143,7 +144,6 @@ pbcheck <- function(ss) {
 
   fit_coef <- coef(fits)
   sim_coef <- ss$subPars$pars
-
   sim_coef <- sim_coef[id %in% fits$id, ]
 
 
@@ -152,11 +152,12 @@ pbcheck <- function(ss) {
   sim_coef[, id := NULL]
   sim_coef <- as.matrix(sim_coef)
 
-  if (fnx == "logistic") {
-    bob_idx <- c("mini", "peak", "cross", "slope")
-    sim_coef <- sim_coef[, bob_idx]
-    fit_coef <- fit_coef[, bob_idx]
-  }
+  ## This is just to match what is presented in the paper
+  # if (fnx == "logistic") {
+  #   bob_idx <- c("mini", "peak", "cross", "slope")
+  #   sim_coef <- sim_coef[, bob_idx]
+  #   fit_coef <- fit_coef[, bob_idx]
+  # }
 
 
   colMeans(sim_coef)
@@ -174,3 +175,7 @@ sims <- vector("list", 4)
 sims[[1]] <- pbcheck(sim)
 sims[[2]] <- pbcheck(sim_co)
 sims[[3]] <- pbcheck(sim_co)
+
+
+
+tt <- runSim_fixed()

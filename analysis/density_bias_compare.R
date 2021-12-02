@@ -3,6 +3,7 @@ library(eyetrackSim)
 library(bdots)
 
 sim_l <- runSim(nsub = 10L, fnct = "logistic", fbst = TRUE)
+sim_l <- runSim_fixed(nsub = 10L, fnct = "logistic", fbst = TRUE)
 
 ## Get bdot fits from simulation
 # returns bdots object
@@ -94,6 +95,8 @@ logistic_dd <- function(t, p) {
   (p1*p2)/dd
 }
 
+fits <- getFits(sim_l)
+
 sim_coef <- getSimCoef(sim_l, fits)
 fit_coef <- coef(fits)
 
@@ -132,6 +135,9 @@ plotY(10)
 plotY(1)
 plotY(2)
 
+
+#### Same with fixed density
+sim_l <- runSim_fixed(nsub = 10L, fnct = "logistic", fbst = TRUE)
 
 ## Really, need a function that will take the bdots fitted values and
 # make oculomotor adjustment, padding with zero or max values where necessary

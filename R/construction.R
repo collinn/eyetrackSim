@@ -1,6 +1,16 @@
 
 
-
+## Run set of simulation on nsub subjects
+#' Run simulation for multiple subjects
+#'
+#' @param nsub numeric, number of subjects in simulation
+#' @param fnct character vector indicatin curve type
+#' @param ntrials number of vwp trials per subject
+#' @param fbst use FBS+T assumption or not
+#'
+#' @returns This runs simluation for single subject, returns a list
+#' containing information on subject, as well as trial data
+#' @export
 runSim <- function(nsub = 10, ntrials = 300,
                    fnct = "logistic", fbst = FALSE) {
 
@@ -15,11 +25,6 @@ runSim <- function(nsub = 10, ntrials = 300,
     tt$trialData <- tt$trialData[, ..nam]
     tt
   }, mc.cores = detectCores() - 1L)
-
-  # subs <- lapply(seq_along(subs), function(i) {
-  #   subs[[i]]$trialData[, id := i]
-  #   subs[[i]]
-  # })
 
   trialData <- lapply(subs, aggregateSub)
   trialData <- rbindlist(trialData)

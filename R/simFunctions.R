@@ -149,7 +149,6 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
   ## Aggregate to single DT
   tt <- rbindlist(trialDataList)
   return(list(subInfo = subInfo, trialData = tt))
-
 }
 
 
