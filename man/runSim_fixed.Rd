@@ -9,7 +9,8 @@ runSim_fixed(
   ntrials = 300,
   fnct = "logistic",
   fbst = FALSE,
-  sampDensity = 50
+  sampDensity = 50,
+  targMult = 1
 )
 }
 \arguments{
@@ -20,6 +21,10 @@ runSim_fixed(
 \item{fnct}{character vector indicatin curve type}
 
 \item{fbst}{use FBS+T assumption or not}
+
+\item{sampDensity}{misnomer. Density for saccades}
+
+\item{targMult}{Multiplier for target, i.e., multiple of sampDensity when fbst == TRUE}
 }
 \value{
 This runs simluation for single subject, returns a list

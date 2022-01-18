@@ -4,7 +4,15 @@
 \alias{runSub_fixed}
 \title{Run simulation for single subject}
 \usage{
-runSub_fixed(fnct = "logistic", ntrials = 300, fbst = FALSE, sampDensity = 50)
+runSub_fixed(
+  fnct = "logistic",
+  ntrials = 300,
+  fbst = FALSE,
+  sampDensity = 50,
+  targMult = 1,
+  window = NULL,
+  windowDensity = sampDensity
+)
 }
 \arguments{
 \item{fnct}{character vector indicatin curve type}
@@ -12,6 +20,14 @@ runSub_fixed(fnct = "logistic", ntrials = 300, fbst = FALSE, sampDensity = 50)
 \item{ntrials}{number of vwp trials per subject}
 
 \item{fbst}{use FBS+T assumption or not}
+
+\item{sampDensity}{misnomer. Density for saccades}
+
+\item{targMult}{Multiplier for target, i.e., multiple of sampDensity when fbst == TRUE}
+
+\item{window}{A time window to sample at different density}
+
+\item{windowDensity}{sampling density within window}
 }
 \value{
 This runs simluation for single subject, returns a list

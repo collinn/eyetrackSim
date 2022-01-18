@@ -3,7 +3,7 @@ library(eyetrackSim)
 library(bdots)
 
 sim_l <- runSim(nsub = 10L, fnct = "logistic", fbst = TRUE)
-sim_l <- runSim_fixed(nsub = 10L, fnct = "logistic", fbst = TRUE)
+sim_l <- runSim_fixed(nsub = 10L, fnct = "logistic", fbst = TRUE, sampDensity = 10L)
 
 ## Get bdot fits from simulation
 # returns bdots object
@@ -122,7 +122,7 @@ plotY <- function(idx) {
 ## Look at density of saccades vs horizontal shift
 # consider running simulation where I choose fixation points
 # for fuller coverage
-plotY(3)
+tt <- plotY(3)
 plotY(4) # iffy
 plotY(5)
 plotY(6) # interesting case

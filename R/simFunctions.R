@@ -70,15 +70,23 @@ makeSubject <- function(fnct = "logistic") {
 #' @param fnct character vector indicatin curve type
 #' @param ntrials number of vwp trials per subject
 #' @param fbst use FBS+T assumption or not
+#' @param window A time window to sample at different density
+#' @param windowRate sampling rate within window
+#' @param pars curve parameters
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
+runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE,
+                   window = NULL, windowRate = NULL, pars = NULL) {
 
   ## Set up parameter stuff for subject
   subInfo <- makeSubject(fnct)
-  pars <- subInfo$pars
+  if (is.null(pars)) {
+    pars <- subInfo$pars
+  } else {
+    subInfo$pars <- pars
+  }
   em <- subInfo$em
   emT <- subInfo$emT # for target
   rg <- function() rgamma(1, em[1]^2/em[2]^2, scale = em[2]^2/em[1])
@@ -127,6 +135,13 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE) {
       #
       ## Duration depends on looking at target or not
       (currdur <- ifelse(fbst & targ, rgT(), rg()))
+
+      if (!is.null(window) & !is.null(windowRate)) {
+        wmin <- min(window)
+        wmax <- max(window)
+        inWindow <- curtime >= wmin & curtime <= wmax
+        currdur <- ifelse(inWindow, windowRate, currdur)
+      }
 
       # while (currdur + curtime < 0) {
       #   currdur <- ifelse(fbst & targ, rg(), rgT())

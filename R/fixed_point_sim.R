@@ -4,15 +4,26 @@
 #' @param fnct character vector indicatin curve type
 #' @param ntrials number of vwp trials per subject
 #' @param fbst use FBS+T assumption or not
+#' @param sampDensity misnomer. Density for saccades
+#' @param targMult Multiplier for target, i.e., multiple of sampDensity when fbst == TRUE
+#' @param window A time window to sample at different density
+#' @param windowRate sampling density within window
+#' @param pars curve parameters
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSub_fixed <- function(fnct = "logistic", ntrials = 300, fbst = FALSE, sampDensity = 50) {
+runSub_fixed <- function(fnct = "logistic", ntrials = 300, fbst = FALSE,
+                         sampDensity = 50, targMult = 1, window = NULL,
+                         windowRate = sampDensity, pars = NULL) {
 
   ## Set up parameter stuff for subject
   subInfo <- makeSubject(fnct)
-  pars <- subInfo$pars
+  if (is.null(pars)) {
+    pars <- subInfo$pars
+  } else {
+    subInfo$pars <- pars
+  }
   em <- subInfo$em
   emT <- subInfo$emT # for target
   rg <- function() rgamma(1, em[1]^2/em[2]^2, scale = em[2]^2/em[1])
@@ -57,7 +68,15 @@ runSub_fixed <- function(fnct = "logistic", ntrials = 300, fbst = FALSE, sampDen
 
       ## Duration depends on looking at target or not
       #(currdur <- ifelse(fbst & targ, rgT(), rg()))
-      currdur <- sampDensity
+      #currdur <- sampDensity
+      currdur <- ifelse(fbst & targ, targMult*sampDensity, sampDensity)
+
+      if (!is.null(window) & !is.null(windowRate)) {
+        wmin <- min(window)
+        wmax <- max(window)
+        inWindow <- curtime >= wmin & curtime <= wmax
+        currdur <- ifelse(inWindow, windowRate, currdur)
+      }
 
       # while (currdur + curtime < 0) {
       #   currdur <- ifelse(fbst & targ, rg(), rgT())
@@ -89,18 +108,20 @@ runSub_fixed <- function(fnct = "logistic", ntrials = 300, fbst = FALSE, sampDen
 #' @param fnct character vector indicatin curve type
 #' @param ntrials number of vwp trials per subject
 #' @param fbst use FBS+T assumption or not
+#' @param sampDensity misnomer. Density for saccades
+#' @param targMult Multiplier for target, i.e., multiple of sampDensity when fbst == TRUE
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSim_fixed <- function(nsub = 10, ntrials = 300,
-                   fnct = "logistic", fbst = FALSE, sampDensity = 50) {
+runSim_fixed <- function(nsub = 10, ntrials = 300, fnct = "logistic",
+                         fbst = FALSE, sampDensity = 50, targMult = 1) {
 
   ## Probably ought to do in parallel
   #subs <- replicate(nsub, runSub(fnct, ntrials, fbst), simplify = FALSE)
   subs <- mclapply(seq_len(nsub), function(i) {
     j <- i # dumb that this is necessary
-    tt <- runSub_fixed(fnct, ntrials, fbst, sampDensity)
+    tt <- runSub_fixed(fnct, ntrials, fbst, sampDensity, targMult)
     tt$trialData[, id := i]
     nn <- ncol(tt$trialData)
     nam <- colnames(tt$trialData)[c(nn, 1:(nn-1))]
@@ -133,13 +154,6 @@ runSim_fixed <- function(nsub = 10, ntrials = 300,
   })
   names(rr) <- subInfo
   rr[['fn']] <- as.character(rr[['fn']][1, 2])
-
-
-  # dots <- function(...) {eval(substitute(alist(...)))}
-  # test <- Map(function(...) {
-  #   tt <- dots(...)
-  #   tt[[1]]
-  # }, subject)
 
   list(trialData = trialData,
        fixations = fixations,
