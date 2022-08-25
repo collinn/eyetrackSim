@@ -1,3 +1,72 @@
+
+## File includes
+# runSim - run full simulation for nsub subjects, aggregate results
+# makeSubject - creates subject with curve pars
+# runSub - run simulation for single subject
+
+
+
+## Run set of simulation on nsub subjects
+#' Run simulation for multiple subjects
+#'
+#' @param nsub numeric, number of subjects in simulation
+#' @param fnct character vector indicatin curve type
+#' @param ntrials number of vwp trials per subject
+#' @param fbst use FBS+T assumption or not
+#'
+#' @returns This runs simluation for single subject, returns a list
+#' containing information on subject, as well as trial data
+#' @export
+runSim <- function(nsub = 10, ntrials = 300,
+                   fnct = "logistic", fbst = FALSE) {
+
+  ## Probably ought to do in parallel
+  #subs <- replicate(nsub, runSub(fnct, ntrials, fbst), simplify = FALSE)
+  subs <- mclapply(seq_len(nsub), function(i) {
+    j <- i # dumb that this is necessary
+    tt <- runSub(fnct, ntrials, fbst)
+    tt$trialData[, id := i]
+    nn <- ncol(tt$trialData)
+    nam <- colnames(tt$trialData)[c(nn, 1:(nn-1))]
+    tt$trialData <- tt$trialData[, ..nam]
+    tt
+  }, mc.cores = detectCores() - 1L)
+
+  trialData <- lapply(subs, aggregateSub)
+  trialData <- rbindlist(trialData)
+
+  fixations <- lapply(subs, buildSaccadeSub)
+  fixations <- rbindlist(fixations)
+
+  subject <- lapply(subs, function(x) {
+    x[['subInfo']]
+  })
+
+  subInfo <- names(subject[[1]])
+
+  rr <- lapply(subInfo,  function(x) {
+    tt <- lapply(subject, function(y) (as.data.table(t(y[[x]]))))
+    tt <- rbindlist(tt)
+    tt[, id := seq_len(nrow(tt))]
+
+    # stupid way to handle this
+    nn <- ncol(tt)
+    nam <- colnames(tt)[c(nn, 1:(nn-1))]
+    tt <- tt[, ..nam]
+    tt
+  })
+  names(rr) <- subInfo
+  rr[['fn']] <- as.character(rr[['fn']][1, 2])
+
+  list(trialData = trialData,
+       fixations = fixations,
+       subPars = rr)
+}
+
+
+
+
+
 #' Create single subject for VWP trial
 #'
 #' @param fnct character vector indicatin curve type
@@ -73,12 +142,15 @@ makeSubject <- function(fnct = "logistic") {
 #' @param window A time window to sample at different density
 #' @param windowRate sampling rate within window
 #' @param pars curve parameters
+#' @param saccadeDelay Alternative to using `lasttime` for saccade time -- instead
+#' can take on a fixed value
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE,
-                   window = NULL, windowRate = NULL, pars = NULL) {
+runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
+                   window = NULL, windowRate = NULL, pars = NULL,
+                   saccadeDelay = NULL) {
 
   ## Set up parameter stuff for subject
   subInfo <- makeSubject(fnct)
@@ -122,7 +194,12 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE,
     while (curtime < max(times)) {
 
       # ? integral value instead?
-      currProb <- fn(pars, lasttime)
+      if (is.null(saccadeDelay)) {
+        currProb <- fn(pars, lasttime)
+      } else {
+        currProb <- fn(pars, curtime - saccadeDelay)
+      }
+
       targ <- runif(1) <= currProb
 
       # ## Only investigate if not already looking at target
@@ -173,6 +250,7 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = FALSE,
 #' @param x A subject run from simulation
 #'
 #' @returns data.table with looks and proportions
+#' @export
 aggregateSub <- function(x) {
   dat <- copy(x$trialData)
   dat[, looks := mean(looks), by = times]
@@ -185,6 +263,7 @@ aggregateSub <- function(x) {
 #' @param x A subject run from simulation
 #'
 #' @returns data.table with entries being saccades and times
+#' @export
 buildSaccadeSub <- function(x) {
   dat <- copy(x$trialData)
 

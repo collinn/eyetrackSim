@@ -1,4 +1,5 @@
 
+
 ## Questions here:
 # 1. Asymptotically, does fbst matter?
 # 2. What does my samp density look like with fbst multiplier

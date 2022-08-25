@@ -11,7 +11,8 @@ runSub_fixed(
   sampDensity = 50,
   targMult = 1,
   window = NULL,
-  windowDensity = sampDensity
+  windowRate = sampDensity,
+  pars = NULL
 )
 }
 \arguments{
@@ -27,7 +28,9 @@ runSub_fixed(
 
 \item{window}{A time window to sample at different density}
 
-\item{windowDensity}{sampling density within window}
+\item{windowRate}{sampling density within window}
+
+\item{pars}{curve parameters}
 }
 \value{
 This runs simluation for single subject, returns a list

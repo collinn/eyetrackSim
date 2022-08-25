@@ -3,6 +3,7 @@
 #######################
 
 ## Logistic function
+#' @export
 logistic_f <- function(p, t) {
   b0 <- p[1] # base
   b1 <- p[2] # max
@@ -11,6 +12,7 @@ logistic_f <- function(p, t) {
   b0 + (b1-b0) / (1 + exp(4*sl*((xo-t)/(b1-b0))))
 }
 
+#' @export
 doubleGauss_f <- function(p, t) {
   mu <- p[1]
   ht <- p[2]
@@ -19,11 +21,12 @@ doubleGauss_f <- function(p, t) {
   b1 <- p[5]
   b2 <- p[6]
 
-  lhs <- (t < mu) * (ht-b1) * exp((t - mu)^2/(-2*s1^2)) + b1
-  rhs <- (t >= mu) * (ht-b2) * exp((t - mu)^2/(-2*s2^2)) + b2
+  lhs <- (t < mu) * ((ht-b1) * exp((t - mu)^2/(-2*s1^2)) + b1)
+  rhs <- (t >= mu) * ((ht-b2) * exp((t - mu)^2/(-2*s2^2)) + b2)
   lhs+rhs
 }
 
+#' @export
 linear_f <- function(p, t) {
   b <- p[1]
   m <- p[2]
