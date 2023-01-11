@@ -2,7 +2,7 @@ library(eyetrackSim)
 library(bdots)
 
 
-sim_fixed <- runSim(nsub = 1000, ntrials = 300, 
+sim_fixed <- runSim(nsub = 100, ntrials = 300, 
                fnct = "logistic", fbst = FALSE, 
                sacDelay = 0)
 
