@@ -13,30 +13,34 @@
 #' @param fnct character vector indicatin curve type
 #' @param ntrials number of vwp trials per subject
 #' @param fbst use FBS+T assumption or not
+#' @param sacDelay alternative mechanism for eye delay
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
 runSim <- function(nsub = 10, ntrials = 300,
-                   fnct = "logistic", fbst = FALSE) {
+                   fnct = "logistic", fbst = FALSE, 
+                   sacDelay = NULL) {
 
   ## Probably ought to do in parallel
   #subs <- replicate(nsub, runSub(fnct, ntrials, fbst), simplify = FALSE)
   subs <- mclapply(seq_len(nsub), function(i) {
     j <- i # dumb that this is necessary
-    tt <- runSub(fnct, ntrials, fbst)
+    tt <- runSub(fnct, ntrials, fbst, saccadeDelay = sacDelay)
     tt$trialData[, id := i]
     nn <- ncol(tt$trialData)
     nam <- colnames(tt$trialData)[c(nn, 1:(nn-1))]
     tt$trialData <- tt$trialData[, ..nam]
     tt
-  }, mc.cores = detectCores() - 1L)
+  }, mc.cores = detectCores() - 2L)
 
   trialData <- lapply(subs, aggregateSub)
   trialData <- rbindlist(trialData)
+  trialData$group <- "A" # for bdots
 
   fixations <- lapply(subs, buildSaccadeSub)
   fixations <- rbindlist(fixations)
+  fixations$group <-  "A"
 
   subject <- lapply(subs, function(x) {
     x[['subInfo']]
@@ -62,8 +66,6 @@ runSim <- function(nsub = 10, ntrials = 300,
        fixations = fixations,
        subPars = rr)
 }
-
-
 
 
 
