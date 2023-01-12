@@ -1,64 +1,15 @@
 library(eyetrackSim)
 library(bdots)
-
-logistic2 <- function(dat, y, time, params = NULL, ...) {
-
-  logisticPars <- function(dat, y, time, ...) {
-    time <- dat[[time]]
-    y <- dat[[y]]
-
-    # idx <- order(time)
-    # time <- time[idx]
-    # y <- y[idx]
-
-    ## Remove cases with zero variance
-    if (var(y) == 0) {
-      return(NULL)
-    }
-
-    ## Starting estimates based on thing
-    mini <- 0
-    peak <- 1
-    cross <- 750
-    slope <- 0.002
-
-    return(c(mini = mini, peak = peak, slope = slope, cross = cross))
-  }
-
-  if (is.null(params)) {
-    params <- logisticPars(dat, y, time)
-  } else {
-    if (length(params) != 4) stop("logistic requires 4 parameters be specified for refitting")
-    if (!all(names(params) %in% c("mini", "peak", "slope", "cross"))) {
-      stop("logistic parameters for refitting must be correctly labeled")
-    }
-  }
-  ## Return NA list if var(y) is 0
-  if (is.null(params)) {
-    return(NULL)
-  }
-  y <- str2lang(y)
-  time <- str2lang(time)
-  ff <- bquote(.(y) ~ mini + (peak - mini) / (1 + exp(4 * slope * (cross - (.(time))) / (peak - mini))))
-  attr(ff, "parnames") <- names(params)
-  return(list(formula = ff, params = params))
-}
-
+library(ggplot2)
 
 
 sim_fixed <- runSim(nsub = 1000, ntrials = 300,
                fnct = "logistic", fbst = FALSE,
                sacDelay = 0)
 
-cat("1")
-
 sim_random <- runSim(nsub = 1000, ntrials = 300,
                fnct = "logistic", fbst = FALSE,
                sacDelay = NULL)
-
-cat("2")
-
-save.image()
 
 fit_fix_fixed <- bdotsFit(sim_fixed$trialData,
                       subject = "id",
@@ -67,8 +18,6 @@ fit_fix_fixed <- bdotsFit(sim_fixed$trialData,
                       group = "group",
                       curveType = logistic())
 
-cat("3")
-
 fit_sac_fixed <- bdotsFit(sim_fixed$fixations,
                           subject = "id",
                           time = "starttime",
@@ -76,20 +25,13 @@ fit_sac_fixed <- bdotsFit(sim_fixed$fixations,
                           group = "group",
                           curveType = logistic())
 
-cat("3.5")
-
-save.image()
-
 fit_sac_fixed2 <- bdotsFit(sim_fixed$fixations,
                           subject = "id",
                           time = "starttime",
                           y = "looks",
                           group = "group",
-                          curveType = logistic2())
+                          curveType = logistic2()) # could also use params argument
 
-save.image()
-
-cat("4")
 
 fit_fix_random <- bdotsFit(sim_random$trialData,
                       subject = "id",
@@ -97,55 +39,96 @@ fit_fix_random <- bdotsFit(sim_random$trialData,
                       y = "looks",
                       group = "group",
                       curveType = logistic())
-cat("5")
 
+# Im a fucking retard and did this with wrong function goddamnit
 fit_sac_random <- bdotsFit(sim_random$fixations,
                           subject = "id",
                           time = "starttime",
                           y = "looks",
                           group = "group",
-                          curveType = logistic())
+                          curveType = logistic(params = 
+                                                 c(mini = 0, peak = 1, 
+                                                   slope = .002, cross = 750)))
 
-cat("6")
 
-save.image()
-# load(".RData")
+#save.image()
+load("index.RData")
 #
 #
 # ## sim to be subset
 # # idx to keep (as id)
-# # subsetSim <- function(ss, idx) {
-# #
-# # }
-#
-# ## Need to check  fitcodes first but ok here is fine
-#
-# ss <- sim_fixed
-# ff <- fit_fix_fixed
-# getParBias <- function(ss, ff) {
-#   tp <- as.matrix(ss$subPars$pars[, 2:5])
-#   fp <- coef(ff)
-#   bb <- suppressWarnings(melt(as.data.table(tp-fp))) #obs bias
-# }
-# library(ggplot2)
-# ggplot(bb, aes(x = value)) + geom_histogram(bins=40) +
-#   geom_vline(xintercept = 0, color = 'red') +
-#   facet_wrap(~variable, scales = "free") +
-#   theme_bw(base_size = 16)
-#
-# mm <- coef(fit_sac_fixed)
-# idx <- mm[, 4] != 0 & mm[,2] > mm[,1]
-#
-# ss <-
-# bb2 <- getParBias(sim_fixed, fit_sac_fixed)
-# bb3 <- getParBias(sim_fixed, fit_sac_fixed2)
-#
-# ggplot(bb3, aes(x = value)) + geom_histogram(bins=40) +
-#   geom_vline(xintercept = 0, color = 'red') +
-#   facet_wrap(~variable, scales = "free") +
-#   theme_bw(base_size = 16)
-#
+ss <- sim_fixed
+rr <- coef(fit_sac_fixed2)
+idx <- which(rr[,4] == 0 | rr[,2] < rr[,1] | rr[,3] < 0)
+idx <- setdiff(1:1000, idx)
+subsetSim <- function(ss, idx) {
+  ss$trialData <- ss$trialData[id %in% idx, ]
+  ss$fixations <- ss$fixations[id %in% idx, ]
+  pp <- ss$subPars
+  pp$pars <- pp$pars[id %in% idx, ]
+  pp$em <- pp$em[id  %in% idx, ]
+  pp$emT <- pp$emT[id  %in% idx, ]
+  ss$subPars <- pp
+  ss
+}
+ss2 <- subsetSim(ss, idx)
 
+
+ss <- subsetSim(sim_fixed, idx)
+ff <- fit_fix_fixed[idx, ]
+getParBias <- function(ss, ff) {
+  tp <- as.matrix(ss$subPars$pars[, 2:5])
+  fp <- coef(ff)
+  bb <- suppressWarnings(melt(as.data.table(tp-fp))) #obs bias
+}
+
+# Bias in added observation
+bb <- getParBias(ss, ff)
+ggplot(bb, aes(x = value)) + geom_histogram(bins=40) +
+  geom_vline(xintercept = 0, color = 'red') +
+  facet_wrap(~variable, scales = "free") +
+  labs(y = "Number of Runs", x = "Bias") +
+  theme_bw(base_size = 16) +
+  ggtitle("Parameter Bias, Fixation Fixed Delay")
+
+
+## Biasa with saccade
+bb2 <- getParBias(ss, fit_sac_fixed2[idx, ])
+ggplot(bb2, aes(x = value)) + geom_histogram(bins=40) +
+  geom_vline(xintercept = 0, color = 'red') +
+  facet_wrap(~variable, scales = "free") +
+  labs(y = "Number of Runs", x = "Bias") +
+  theme_bw(base_size = 16) +
+  ggtitle("Parameter Bias, Saccade Fixed Delay")
+    
+
+## Bias with random delay
+## But i also fucked up fitting this (goddamnit)
+rr <- coef(fit_sac_random)
+idx <- which(rr[,4] == 0 | rr[,2] < rr[,1] | rr[,3] < 0)
+idx <- setdiff(1:1000, idx)
+
+ss <- subsetSim(sim_random, idx)
+ff <- fit_fix_random[idx, ]
+bb3 <- getParBias(ss, ff)
+ggplot(bb3, aes(x = value)) + geom_histogram(bins=40) +
+  geom_vline(xintercept = 0, color = 'red') +
+  facet_wrap(~variable, scales = "free") +
+  labs(y = "Number of Runs", x = "Bias") +
+  theme_bw(base_size = 16) +
+  ggtitle("Parameter Bias, Fixation Random Delay")
+
+
+
+ss <- subsetSim(sim_random, idx)
+ff <- fit_sac_random[idx, ]
+bb4 <- getParBias(ss, ff)
+ggplot(bb4, aes(x = value)) + geom_histogram(bins=40) +
+  geom_vline(xintercept = 0, color = 'red') +
+  facet_wrap(~variable, scales = "free") +
+  labs(y = "Number of Runs", x = "Bias") +
+  theme_bw(base_size = 16) +
+  ggtitle("Parameter Bias, Saccade Random Delay")
 
 ############ New logistic
 #' Logistic curve function for nlme (test use with saccade, NOT FOR GENERAL USE)
@@ -181,7 +164,7 @@ logistic2 <- function(dat, y, time, params = NULL, ...) {
     cross <- 750
     slope <- 0.002
 
-    return(c(mini = mini, peak = peak, slope = slope, cross = cross))
+    return(c(mini = 0, peak = 1, slope = .002, cross = 750))
   }
 
   if (is.null(params)) {
