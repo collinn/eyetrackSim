@@ -3,7 +3,7 @@ library(bdots)
 library(ggplot2)
 
 
-sim_fixed <- runSim(nsub = 1000, ntrials = 300,
+sim_fixed <- runSim(nsub = 10, ntrials = 300,
                fnct = "logistic", fbst = FALSE,
                sacDelay = 0)
 
@@ -11,26 +11,26 @@ sim_random <- runSim(nsub = 1000, ntrials = 300,
                fnct = "logistic", fbst = FALSE,
                sacDelay = NULL)
 
+
 fit_fix_fixed <- bdotsFit(sim_fixed$trialData,
                       subject = "id",
                       time = "times",
                       y = "looks",
                       group = "group",
-                      curveType = logistic())
+                      curveType = logistic(params =
+                                             c(mini = 0, peak = 1,
+                                               slope = .002, cross = 750)))
+
 
 fit_sac_fixed <- bdotsFit(sim_fixed$fixations,
                           subject = "id",
                           time = "starttime",
                           y = "looks",
                           group = "group",
-                          curveType = logistic())
+                          curveType = logistic(params =
+                                                 c(mini = 0, peak = 1,
+                                                   slope = .002, cross = 750)))
 
-fit_sac_fixed2 <- bdotsFit(sim_fixed$fixations,
-                          subject = "id",
-                          time = "starttime",
-                          y = "looks",
-                          group = "group",
-                          curveType = logistic2()) # could also use params argument
 
 
 fit_fix_random <- bdotsFit(sim_random$trialData,
@@ -38,7 +38,9 @@ fit_fix_random <- bdotsFit(sim_random$trialData,
                       time = "times",
                       y = "looks",
                       group = "group",
-                      curveType = logistic())
+                      curveType = logistic(params =
+                                             c(mini = 0, peak = 1,
+                                               slope = .002, cross = 750)))
 
 # Im a fucking retard and did this with wrong function goddamnit
 fit_sac_random <- bdotsFit(sim_random$fixations,
@@ -46,13 +48,13 @@ fit_sac_random <- bdotsFit(sim_random$fixations,
                           time = "starttime",
                           y = "looks",
                           group = "group",
-                          curveType = logistic(params = 
-                                                 c(mini = 0, peak = 1, 
+                          curveType = logistic(params =
+                                                 c(mini = 0, peak = 1,
                                                    slope = .002, cross = 750)))
 
 
-#save.image()
-load("index.RData")
+save.image()
+#load("index.RData")
 #
 #
 # ## sim to be subset
@@ -100,7 +102,7 @@ ggplot(bb2, aes(x = value)) + geom_histogram(bins=40) +
   labs(y = "Number of Runs", x = "Bias") +
   theme_bw(base_size = 16) +
   ggtitle("Parameter Bias, Saccade Fixed Delay")
-    
+
 
 ## Bias with random delay
 ## But i also fucked up fitting this (goddamnit)
