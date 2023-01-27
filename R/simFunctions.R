@@ -18,8 +18,8 @@
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSim <- function(nsub = 10, ntrials = 300,
-                   fnct = "logistic", fbst = FALSE, 
+runSim_pb <- function(nsub = 10, ntrials = 300,
+                   fnct = "logistic", fbst = FALSE,
                    sacDelay = NULL) {
 
   ## Probably ought to do in parallel

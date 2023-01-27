@@ -5,7 +5,7 @@ Date: 2021-10-11
 Authors@R: person("Collin", "Nolte", role=c("aut","cre"), email="collin-nolte@uiowa.edu", comment=c(ORCID="000-0002-0650-1119"))
 Description: This is an altered reproduction of the simulation discussed in Bob's Princess Bride paper investigating relationship between fixation curve and fixation data
 BugReports: http://github.com/collinn/eyetrackSim/issues
-Depends: data.table, ggplot2, bdots, parallel
+Depends: data.table, ggplot2, bdots, parallel, R (>= 4.0.0)
 License: GPL-3
 LazyData: TRUE
 Encoding: UTF-8

@@ -13,7 +13,7 @@
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSub_fixed <- function(fnct = "logistic", ntrials = 300, fbst = FALSE,
+runSub_fixed_pb <- function(fnct = "logistic", ntrials = 300, fbst = FALSE,
                          sampDensity = 50, targMult = 1, window = NULL,
                          windowRate = sampDensity, pars = NULL) {
 
