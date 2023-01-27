@@ -13,6 +13,7 @@
 #'
 #' @description Create data for validating different situations in competing bdots implementations
 #' ar = 0.8 and sd in ar noise is 0.025
+#' @import mvtnorm
 #' @export
 createData <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
                        paired = FALSE, pairMag = 0.05, ar1 = FALSE,
@@ -21,7 +22,7 @@ createData <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
   time <- seq(0, 1600, by = 4)
 
   if (!manymeans) {
-    res <- singleMeans(n, trials, pars, paired, ar1)
+    res <- singleMeans(n, trials, pars, paired, ar1, time)
     return(res)
   }
 
@@ -95,13 +96,34 @@ createData <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
 }
 
 
+singleMeans <- function(n, trials, pars, paired, ar1, time) {
+  pars <- pars[[1]]
+  sigv <- 0.25 / sqrt(trials)
+
+  group1 <- createSingleMeanSubs(n, ar1, pars = pars, sig = sigv, rho = 0.8,
+                                 trials = trials, time = time)
+
+  if (paired) {
+    # This just adds gaussian noise to first group
+    group2 <- createSingleMeanSubs(n, ar1, pars, rho = 0, sig = sigv, gg = "B",
+                                   trials = trials, time=time)
+  } else {
+    group2 <- createSingleMeanSubs(n, ar1, pars, rho = 0.8, sig = sigv, gg = "B",
+                                   trials = trials, time = time)
+  }
+  dts <- rbindlist(list(group1, group2))
+  parsA <- matrix(pars, ncol = 4, nrow = n, byrow = TRUE)
+  return(list(dts = dts, parsA = parsA, parsB = parsA))
+}
+
 # val <- logistic_f(c(0, 1, 0.002, 750), seq(0,1600,4))
 # sig <- 0.025
 # rho <- 0.8
 
 ## Pars are from jakes paper
 # but using more realistic values actually because xo of 200 is retarded
-createSingleMeanSubs <- function(n, ar1 = FALSE, pars = c(0, 0.9, 0.0025, 750), rho = 0.8, sig = 0.025, gg = "A") {
+createSingleMeanSubs <- function(n, ar1 = FALSE, pars = c(0, 0.9, 0.0025, 750),
+                                 rho = 0.8, sig = 0.025, gg = "A", trials, time) {
   if (length(pars) != 4) stop("4 pars for single mean subs")
 
   ## Indicates if paired
@@ -138,25 +160,10 @@ addARerror <- function(val, rho = 0.8, sig = 0.025) {
   for (i in 2:n) {
     e[i] <- rho*e[i-1] + w[i]
   }
-  e[1] <- 0
-  e <- e + w
+  #e[1] <- 0
+  #e <- e + w
   val <- val + e
 }
 
 
-singleMeans <- function(n, trials, pars, paired, ar1) {
-  pars <- pars[[1]]
-  sigv <- 0.25 / sqrt(trials)
 
-  group1 <- createSingleMeanSubs(n, ar1, pars = pars, sig = sigv, rho = 0.8)
-
-  if (paired) {
-    # This just adds gaussian noise to first group
-    group2 <- createSingleMeanSubs(n, ar1, pars, rho = 0, sig = sigv, gg = "B")
-  } else {
-    group2 <- createSingleMeanSubs(n, ar1, pars, rho = 0.8, sig = sigv, gg = "B")
-  }
-  dts <- rbindlist(list(group1, group2))
-  parsA <- matrix(pars, ncol = 4, nrow = n, byrow = TRUE)
-  return(list(dts = dts, parsA = parsA, parsB = parsA))
-}
