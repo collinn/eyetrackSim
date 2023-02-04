@@ -166,6 +166,11 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
   rg <- function() rgamma(1, em[1]^2/em[2]^2, scale = em[2]^2/em[1])
   rgT <- function() rgamma(1, emT[1]^2/emT[2]^2, scale = emT[2]^2/emT[1])
 
+  # Let's get rid of the short ones to exemplify the added observation bias
+  if (fbst) {
+    rg <- rgT
+  }
+
   ## Assign curve fitting function
   if (fnct == "logistic") {
     fn <- logistic_f
