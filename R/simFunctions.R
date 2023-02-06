@@ -95,14 +95,24 @@ makeSubject <- function(fnct = "logistic") {
   subPars <- vector("numeric", nrow(bb))
   subPars[] <- Inf
   maxFix <- 2
-  while (maxFix > 1 | maxFix < 0.6) { # added minimum independent of mbob
-    subPars[] <- Inf
-    while (any(bb[, subPars <= min | subPars >= max ])) {
-      subPars <- bb[, rnorm(nrow(bb))*sd + mean]
+  if (fnct == "logistic") {
+    while (maxFix > 1 | maxFix < 0.6) { # added minimum independent of mbob
+      subPars[] <- Inf
+      while (any(bb[, subPars <= min | subPars >= max ])) {
+        subPars <- bb[, rnorm(nrow(bb))*sd + mean]
+      }
+      maxFix <- max(fn(subPars, times))
     }
-    maxFix <- max(fn(subPars, times))
+  } else {
+    while (maxFix > 1) { # added minimum independent of mbob
+      subPars[] <- Inf
+      while (any(bb[, subPars <= min | subPars >= max ])) {
+        subPars <- bb[, rnorm(nrow(bb))*sd + mean]
+      }
+      maxFix <- max(fn(subPars, times))
+    }
   }
-  (maxFix)
+
 
   names(subPars) <- bb$param
 
@@ -166,7 +176,7 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
   rg <- function() rgamma(1, em[1]^2/em[2]^2, scale = em[2]^2/em[1])
   rgT <- function() rgamma(1, emT[1]^2/emT[2]^2, scale = emT[2]^2/emT[1])
 
-  # Let's get rid of the short ones to exemplify the added observation bias
+  # # Let's get rid of the short ones to exemplify the added observation bias
   if (fbst) {
     rg <- rgT
   }

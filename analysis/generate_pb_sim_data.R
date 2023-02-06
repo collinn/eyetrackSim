@@ -15,23 +15,22 @@ library(ggplot2)
 
 ## Tryin some new shit
 N <- 1000
+FBST <- TRUE # change fixation length
 sim_no_delay <- runSim_pb(nsub = N, ntrials = 300,
-                    fnct = "logistic", fbst = FALSE,
+                    fnct = "logistic", fbst = FBST,
                     sacDelay = 0)
 
 unf <- function() runif(1, min = 100, max = 300)
 makeActiveBinding("unf_rv", unf, .GlobalEnv)
 sim_uniform <- runSim_pb(nsub = N, ntrials = 300,
-                    fnct = "logistic", fbst = FALSE,
+                    fnct = "logistic", fbst = FBST,
                     sacDelay = unf_rv)
 
 wb <- function() rweibull(1, shape = 1.8, scale = 224.9)
 makeActiveBinding("wb_rv", wb, .GlobalEnv)
 sim_weibull <- runSim_pb(nsub = N, ntrials = 300,
-                      fnct = "logistic", fbst = FALSE,
+                      fnct = "logistic", fbst = FBST,
                       sacDelay = wb_rv)
-
-
 
 
 
@@ -96,4 +95,8 @@ fit_sac_weibull <- bdotsFit(sim_weibull$fixations,
                                                    c(mini = 0, peak = 1,
                                                      slope = .002, cross = 750)))
 
-save.image(file = "pb_data_sim_new.RData")
+if (FBST) {
+  save.image(file = "pb_data_sim_fbst.RData")
+} else {
+  save.image(file = "pb_data_sim_no_fbst.RData")
+}
