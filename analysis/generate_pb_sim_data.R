@@ -36,14 +36,20 @@ sim_weibull <- runSim_pb(nsub = N, ntrials = 300,
 
 ## Now using same starting parameters for all (as to not bias things greatly)
 # or to maintain fairness rather
+# fit_fix_no_delay <- bdotsFit(sim_no_delay$trialData,
+#                           subject = "id",
+#                           time = "times",
+#                           y = "looks",
+#                           group = "group",
+#                           curveType = logistic(params =
+#                                                  c(mini = 0, peak = 1,
+#                                                    slope = .002, cross = 750)))
 fit_fix_no_delay <- bdotsFit(sim_no_delay$trialData,
-                          subject = "id",
-                          time = "times",
-                          y = "looks",
-                          group = "group",
-                          curveType = logistic(params =
-                                                 c(mini = 0, peak = 1,
-                                                   slope = .002, cross = 750)))
+                             subject = "id",
+                             time = "times",
+                             y = "looks",
+                             group = "group",
+                             curveType = logistic())
 cat("1\n")
 
 fit_sac_no_delay <- bdotsFit(sim_no_delay$fixations,
@@ -51,9 +57,7 @@ fit_sac_no_delay <- bdotsFit(sim_no_delay$fixations,
                           time = "starttime",
                           y = "looks",
                           group = "group",
-                          curveType = logistic(params =
-                                                 c(mini = 0, peak = 1,
-                                                   slope = .002, cross = 750)))
+                          curveType = logistic())
 cat("2\n")
 sim_uniform$trialData[, times := times - 200L]
 sim_uniform$fixations[, starttime := starttime - 200L]
@@ -62,18 +66,14 @@ fit_fix_uniform <- bdotsFit(sim_uniform$trialData,
                            time = "times",
                            y = "looks",
                            group = "group",
-                           curveType = logistic(params =
-                                                  c(mini = 0, peak = 1,
-                                                    slope = .002, cross = 750)))
+                           curveType = logistic())
 cat("3\n")
 fit_sac_uniform <- bdotsFit(sim_uniform$fixations,
                            subject = "id",
                            time = "starttime",
                            y = "looks",
                            group = "group",
-                           curveType = logistic(params =
-                                                  c(mini = 0, peak = 1,
-                                                    slope = .002, cross = 750)))
+                           curveType = logistic())
 cat("4\n")
 sim_weibull$trialData[, times := times - 200L]
 sim_weibull$fixations[, starttime := starttime - 200L]
@@ -82,21 +82,17 @@ fit_fix_weibull <- bdotsFit(sim_weibull$trialData,
                             time = "times",
                             y = "looks",
                             group = "group",
-                            curveType = logistic(params =
-                                                   c(mini = 0, peak = 1,
-                                                     slope = .002, cross = 750)))
+                            curveType = logistic())
 cat("5\n")
 fit_sac_weibull <- bdotsFit(sim_weibull$fixations,
                             subject = "id",
                             time = "starttime",
                             y = "looks",
                             group = "group",
-                            curveType = logistic(params =
-                                                   c(mini = 0, peak = 1,
-                                                     slope = .002, cross = 750)))
+                            curveType = logistic())
 
 if (FBST) {
-  save.image(file = "pb_data_sim_fbst.RData")
+  save.image(file = "pb_data_sim_fbst_no_start_par.RData")
 } else {
-  save.image(file = "pb_data_sim_no_fbst.RData")
+  save.image(file = "pb_data_sim_no_fbst_no_start_par.RData")
 }

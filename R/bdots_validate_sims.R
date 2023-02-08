@@ -143,7 +143,9 @@ createSingleMeanSubs <- function(n, ar1 = FALSE, pars = c(0, 0.9, 0.0025, 750),
   rbindlist(dts1)
 }
 
-
+#' Create ar1 error
+#'
+#' @export
 addARerror <- function(val, rho = 0.8, sig = 0.025) {
 
   ## Let's make a maybe possibility for paired (kinda)
