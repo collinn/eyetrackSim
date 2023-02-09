@@ -31,10 +31,11 @@ pline <- function(p, time, gp) {
 #' @export
 createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.5),
                             manymeans = TRUE,
-                            TIME = seq(-2, 2, length.out = 501)) {
+                            TIME = seq(-2, 2, length.out = 501),
+                            distSig = 0.025) {
 
   ## Make first group
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*0.05)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
 
   if (!manymeans) {
     p[,1] <- min(abs(p[,1]))
@@ -60,7 +61,7 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.5),
 
   # make second group
   pars <- c(0,0)
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*0.05)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
   p[,1] <- p1[,1]
   p[,2] <- p[,1] # make there be no slope
 
@@ -130,10 +131,11 @@ plinePars <- function(dat, y, time, params = NULL, ...) {
 #' @export
 createPlineData2 <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.5),
                             manymeans = TRUE,
-                            TIME = seq(-0.5, 2, length.out = 501)) {
+                            TIME = seq(-0.5, 2, length.out = 501),
+                            distSig = 0.025) {
 
   ## Make first group
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*0.025)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
 
   if (!manymeans) {
     p[,1] <- min(abs(p[,1]))
@@ -160,7 +162,7 @@ createPlineData2 <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.5),
 
   # make second group
   pars <- c(0,0)
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*0.025)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
   p[,1] <- p1[,1]
   #p[,2] <- p[,1] # make there be no slope
 

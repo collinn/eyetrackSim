@@ -10,7 +10,8 @@ createPlineData(
   ar1 = FALSE,
   pars = c(0, 0.5),
   manymeans = TRUE,
-  TIME = seq(-2, 2, length.out = 501)
+  TIME = seq(-2, 2, length.out = 501),
+  distSig = 0.025
 )
 }
 \arguments{
