@@ -13,20 +13,21 @@
 #' @param fnct character vector indicatin curve type
 #' @param ntrials number of vwp trials per subject
 #' @param fbst use FBS+T assumption or not
-#' @param sacDelay alternative mechanism for eye delay
+#' @param omDelay alternative mechanism for eye delay, can be constant or active bound var
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
 runSim_pb <- function(nsub = 10, ntrials = 300,
                    fnct = "logistic", fbst = FALSE,
-                   sacDelay = NULL) {
+                   omDelay = 0) {
 
   ## Probably ought to do in parallel
   #subs <- replicate(nsub, runSub(fnct, ntrials, fbst), simplify = FALSE)
   subs <- mclapply(seq_len(nsub), function(i) {
     j <- i # dumb that this is necessary
-    tt <- runSub(fnct, ntrials, fbst, saccadeDelay = sacDelay)
+    tt <- runSub(fnct, ntrials, fbst, omDelay = omDelay)
+    #set(tt, "trialData", i)
     tt$trialData[, id := i]
     nn <- ncol(tt$trialData)
     nam <- colnames(tt$trialData)[c(nn, 1:(nn-1))]
@@ -104,7 +105,7 @@ makeSubject <- function(fnct = "logistic") {
       maxFix <- max(fn(subPars, times))
     }
   } else {
-    while (maxFix > 1) { # added minimum independent of mbob
+    while (maxFix > 1) { # for double gauss
       subPars[] <- Inf
       while (any(bb[, subPars <= min | subPars >= max ])) {
         subPars <- bb[, rnorm(nrow(bb))*sd + mean]
@@ -154,15 +155,14 @@ makeSubject <- function(fnct = "logistic") {
 #' @param window A time window to sample at different density
 #' @param windowRate sampling rate within window
 #' @param pars curve parameters
-#' @param saccadeDelay Alternative to using `lasttime` for saccade time -- instead
-#' can take on a fixed value
+#' @param omDelay Alternative to using `lasttime` for saccade time -- instead
+#' can take on a fixed value or bound RV
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
 runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
-                   window = NULL, windowRate = NULL, pars = NULL,
-                   saccadeDelay = NULL) {
+                   pars = NULL, omDelay = 0) {
 
   ## Set up parameter stuff for subject
   subInfo <- makeSubject(fnct)
@@ -190,66 +190,35 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
     fn <- linear_f
   }
 
-  #trialDataList <- vector("list", length = ntrials)
 
   ## Go through trials
   trialDataList <- mclapply(seq_len(ntrials), function(i) {
     trialdata <- data.table(trial = i,
                             times = times,
                             looks = 0L * times[],
-                            #saccade = 0L,
                             saccadenum = 0L)
 
-    ## Step 1 of looks
+    ## Step 1 of looks (I'll leave this the same as an offset)
     curtime <- min(times) - runif(1)*em[1] # current time
-    lasttime <- curtime - rg() - runif(1)*em[1]
-
-    # ## What are we looking at *first*
-    # currProb <- fn(pars, lasttime)
-    # targ <- runif(1) <= currProb
 
     while (curtime < max(times)) {
 
-      # ? integral value instead?
-      if (is.null(saccadeDelay)) {
-        currProb <- fn(pars, lasttime)
-      } else {
-        currProb <- fn(pars, curtime - saccadeDelay)
-      }
+      ## Make this assignment because omDelay could be bound RV
+      rho_delay <- omDelay
+      currProb <- fn(pars, curtime - rho_delay)
 
+      # am I looking at target?
       targ <- runif(1) <= currProb
 
-      # ## Only investigate if not already looking at target
-      # if (!targ) {
-      #   currProb <- fn(pars, lasttime)
-      #   targ <- runif(1) <= currProb
-      # } else {
-      #   targ <- FALSE # were looking at target on last saccade so now were not
-      # }
-      #
       ## Duration depends on looking at target or not
-      (currdur <- ifelse(fbst & targ, rgT(), rg()))
-
-      if (!is.null(window) & !is.null(windowRate)) {
-        wmin <- min(window)
-        wmax <- max(window)
-        inWindow <- curtime >= wmin & curtime <= wmax
-        currdur <- ifelse(inWindow, windowRate, currdur)
-      }
-
-      # while (currdur + curtime < 0) {
-      #   currdur <- ifelse(fbst & targ, rg(), rgT())
-      # }
+      fixgamma <- ifelse(fbst & targ, rgT(), rg())
 
       ## update trial data
-      idx <- which(times >= curtime & times <= curtime + currdur)
+      idx <- which(times >= curtime & times <= curtime + fixgamma + rho_delay)
       if (length(idx) == 0) next
       trialdata[idx, looks := targ]
-      #sac_idx <- which.min(abs(times - curtime)) # time less current closest to zero
-      #trialdata[sac_idx, saccade := 1]
       trialdata[idx[1]:nrow(trialdata), saccadenum := saccadenum + 1L]
-      lasttime <- curtime
-      curtime <- curtime + currdur
+      curtime <- curtime + fixgamma + rho_delay
     }
     trialdata
 
@@ -259,6 +228,106 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
   tt <- rbindlist(trialDataList)
   return(list(subInfo = subInfo, trialData = tt))
 }
+
+# runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
+#                    window = NULL, windowRate = NULL, pars = NULL,
+#                    saccadeDelay = NULL) {
+#
+#   ## Set up parameter stuff for subject
+#   subInfo <- makeSubject(fnct)
+#   if (is.null(pars)) {
+#     pars <- subInfo$pars
+#   } else {
+#     subInfo$pars <- pars
+#   }
+#   em <- subInfo$em
+#   emT <- subInfo$emT # for target
+#   rg <- function() rgamma(1, em[1]^2/em[2]^2, scale = em[2]^2/em[1])
+#   rgT <- function() rgamma(1, emT[1]^2/emT[2]^2, scale = emT[2]^2/emT[1])
+#
+#   # # Let's get rid of the short ones to exemplify the added observation bias
+#   if (fbst) {
+#     rg <- rgT
+#   }
+#
+#   ## Assign curve fitting function
+#   if (fnct == "logistic") {
+#     fn <- logistic_f
+#   } else if (fnct == "doubleGauss") {
+#     fn <- doubleGauss_f
+#   }  else if (fnct == "linear") {
+#     fn <- linear_f
+#   }
+#
+#   #trialDataList <- vector("list", length = ntrials)
+#
+#   ## Go through trials
+#   trialDataList <- mclapply(seq_len(ntrials), function(i) {
+#     trialdata <- data.table(trial = i,
+#                             times = times,
+#                             looks = 0L * times[],
+#                             #saccade = 0L,
+#                             saccadenum = 0L)
+#
+#     ## Step 1 of looks
+#     curtime <- min(times) - runif(1)*em[1] # current time
+#     lasttime <- curtime - rg() - runif(1)*em[1]
+#
+#     # ## What are we looking at *first*
+#     # currProb <- fn(pars, lasttime)
+#     # targ <- runif(1) <= currProb
+#
+#     while (curtime < max(times)) {
+#
+#       # ? integral value instead?
+#       if (is.null(saccadeDelay)) {
+#         currProb <- fn(pars, lasttime)
+#       } else {
+#         currProb <- fn(pars, curtime - saccadeDelay)
+#       }
+#
+#       targ <- runif(1) <= currProb
+#
+#       # ## Only investigate if not already looking at target
+#       # if (!targ) {
+#       #   currProb <- fn(pars, lasttime)
+#       #   targ <- runif(1) <= currProb
+#       # } else {
+#       #   targ <- FALSE # were looking at target on last saccade so now were not
+#       # }
+#       #
+#       ## Duration depends on looking at target or not
+#       (currdur <- ifelse(fbst & targ, rgT(), rg()))
+#
+#       if (!is.null(window) & !is.null(windowRate)) {
+#         wmin <- min(window)
+#         wmax <- max(window)
+#         inWindow <- curtime >= wmin & curtime <= wmax
+#         currdur <- ifelse(inWindow, windowRate, currdur)
+#       }
+#
+#       # while (currdur + curtime < 0) {
+#       #   currdur <- ifelse(fbst & targ, rg(), rgT())
+#       # }
+#
+#       ## update trial data
+#       idx <- which(times >= curtime & times <= curtime + currdur)
+#       if (length(idx) == 0) next
+#       trialdata[idx, looks := targ]
+#       #sac_idx <- which.min(abs(times - curtime)) # time less current closest to zero
+#       #trialdata[sac_idx, saccade := 1]
+#       trialdata[idx[1]:nrow(trialdata), saccadenum := saccadenum + 1L]
+#       lasttime <- curtime
+#       curtime <- curtime + currdur
+#     }
+#     trialdata
+#
+#   }, mc.cores = detectCores()-1L)
+#
+#   ## Aggregate to single DT
+#   tt <- rbindlist(trialDataList)
+#   return(list(subInfo = subInfo, trialData = tt))
+# }
 
 
 

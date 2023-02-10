@@ -18,19 +18,19 @@ N <- 1000
 FBST <- TRUE # change fixation length
 sim_no_delay <- runSim_pb(nsub = N, ntrials = 300,
                     fnct = "logistic", fbst = FBST,
-                    sacDelay = 0)
+                    omDelay = 0)
 
 unf <- function() runif(1, min = 100, max = 300)
 makeActiveBinding("unf_rv", unf, .GlobalEnv)
 sim_uniform <- runSim_pb(nsub = N, ntrials = 300,
                     fnct = "logistic", fbst = FBST,
-                    sacDelay = unf_rv)
+                    omDelay = unf_rv)
 
 wb <- function() rweibull(1, shape = 1.8, scale = 224.9)
 makeActiveBinding("wb_rv", wb, .GlobalEnv)
 sim_weibull <- runSim_pb(nsub = N, ntrials = 300,
                       fnct = "logistic", fbst = FBST,
-                      sacDelay = wb_rv)
+                      omDelay = wb_rv)
 
 
 
