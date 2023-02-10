@@ -188,3 +188,86 @@ createPlineData2 <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.5),
   dtsB <- rbindlist(dts)
   rbindlist(list(dtsA, dtsB))
 }
+
+
+
+#' Create piecewise linear data
+#'
+#' Again, because maybe I'm retarded? except this time wihtout "pairing" the base
+#' and also yes i am retarded
+#'
+#' @param n stuff
+#' @param trials stuff
+#' @param ar1 stuff
+#' @param pars stuff
+#' @param manymeans stuff
+#' @param TIME stuff
+#'
+#' @export
+createPlineData3 <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.5),
+                             manymeans = TRUE,
+                             TIME = seq(-1, 1, length.out = 401),
+                             distSig = 0.025, paired = FALSE) {
+
+  ## Make first group
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
+
+  if (!manymeans) {
+    p[,1] <- 0
+    p[,2] <- 0.5
+  }
+
+  p <- abs(p)
+  p1 <- p # will use this for other group
+
+  spars <- split(p, row(p))
+  dts <- lapply(seq_len(n), function(x) {
+    pp <- spars[[x]]
+    dt <- data.table(id = x,
+                     time = TIME,
+                     group = "A",
+                     true = pline(pp, TIME, "A"))
+    if (ar1) {
+      dt[, fixations := addARerror(val = true, rho = 0.8, sig = 0.25/sqrt(trials))]
+    } else {
+      dt[, fixations := rnorm(1, true, sd = 0.25/sqrt(trials)), by = time]
+    }
+  })
+  dtsA <- rbindlist(dts)
+
+  # make second group
+  pars <- c(0,0)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
+  # p[,1] <- p1[,1] # no more pairing
+  #p[,2] <- p[,1] # make there be no slope
+
+  if (!manymeans) {
+    p[,1] <- 0
+    p[,2] <- 0
+  }
+
+  ## If paired, intercept should match and id should be same
+  if (paired) {
+    p[,1] <- p1[,1]
+    gbID <- 0
+  } else {
+    gbID <- n
+  }
+
+  p <- abs(p)
+  spars <- split(p, row(p))
+  dts <- lapply(seq_len(n), function(x) {
+    pp <- spars[[x]]
+    dt <- data.table(id = x + gbID,
+                     time = TIME,
+                     group = "B",
+                     true = pline(pp, TIME, "B"))
+    if (ar1) {
+      dt[, fixations := addARerror(val = true, rho = 0.8, sig = 0.25/sqrt(trials))]
+    } else {
+      dt[, fixations := rnorm(1, true, sd = 0.25/sqrt(trials)), by = time]
+    }
+  })
+  dtsB <- rbindlist(dts)
+  rbindlist(list(dtsA, dtsB))
+}
