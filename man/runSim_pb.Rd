@@ -9,7 +9,7 @@ runSim_pb(
   ntrials = 300,
   fnct = "logistic",
   fbst = FALSE,
-  sacDelay = NULL
+  omDelay = 0
 )
 }
 \arguments{
@@ -21,7 +21,7 @@ runSim_pb(
 
 \item{fbst}{use FBS+T assumption or not}
 
-\item{sacDelay}{alternative mechanism for eye delay}
+\item{omDelay}{alternative mechanism for eye delay, can be constant or active bound var}
 }
 \value{
 This runs simluation for single subject, returns a list

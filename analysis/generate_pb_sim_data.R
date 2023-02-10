@@ -15,7 +15,7 @@ library(ggplot2)
 
 ## Tryin some new shit
 N <- 1000
-FBST <- TRUE # change fixation length
+FBST <- FALSE # change fixation length
 sim_no_delay <- runSim_pb(nsub = N, ntrials = 300,
                     fnct = "logistic", fbst = FBST,
                     omDelay = 0)
@@ -49,7 +49,7 @@ fit_fix_no_delay <- bdotsFit(sim_no_delay$trialData,
                              time = "times",
                              y = "looks",
                              group = "group",
-                             curveType = logistic())
+                             curveType = logistic_sac())
 cat("1\n")
 
 fit_sac_no_delay <- bdotsFit(sim_no_delay$fixations,
@@ -57,7 +57,7 @@ fit_sac_no_delay <- bdotsFit(sim_no_delay$fixations,
                           time = "starttime",
                           y = "looks",
                           group = "group",
-                          curveType = logistic())
+                          curveType = logistic_sac())
 cat("2\n")
 sim_uniform$trialData[, times := times - 200L]
 sim_uniform$fixations[, starttime := starttime - 200L]
@@ -66,14 +66,14 @@ fit_fix_uniform <- bdotsFit(sim_uniform$trialData,
                            time = "times",
                            y = "looks",
                            group = "group",
-                           curveType = logistic())
+                           curveType = logistic_sac())
 cat("3\n")
 fit_sac_uniform <- bdotsFit(sim_uniform$fixations,
                            subject = "id",
                            time = "starttime",
                            y = "looks",
                            group = "group",
-                           curveType = logistic())
+                           curveType = logistic_sac())
 cat("4\n")
 sim_weibull$trialData[, times := times - 200L]
 sim_weibull$fixations[, starttime := starttime - 200L]
@@ -82,14 +82,14 @@ fit_fix_weibull <- bdotsFit(sim_weibull$trialData,
                             time = "times",
                             y = "looks",
                             group = "group",
-                            curveType = logistic())
+                            curveType = logistic_sac())
 cat("5\n")
 fit_sac_weibull <- bdotsFit(sim_weibull$fixations,
                             subject = "id",
                             time = "starttime",
                             y = "looks",
                             group = "group",
-                            curveType = logistic())
+                            curveType = logistic_sac())
 
 if (FBST) {
   save.image(file = "pb_data_sim_fbst_no_start_par.RData")

@@ -63,17 +63,17 @@ plinePars <- function(dat, y, time, params = NULL, ...) {
 #' @param TIME stuff
 #'
 #' @export
-createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.5),
+createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
                              manymeans = TRUE,
-                             TIME = seq(-1, 1, length.out = 401),
+                             TIME = seq(-0.1, 1, length.out = 500),
                              distSig = 0.025, paired = FALSE) {
 
   ## Make first group
   p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
 
   if (!manymeans) {
-    p[,1] <- 0
-    p[,2] <- 0.5
+    p[,1] <- pars[1]
+    p[,2] <- pars[2]
   }
 
   p <- abs(p)

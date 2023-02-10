@@ -4,15 +4,7 @@
 \alias{runSub}
 \title{Run simulation for single subject}
 \usage{
-runSub(
-  fnct = "logistic",
-  ntrials = 300,
-  fbst = TRUE,
-  window = NULL,
-  windowRate = NULL,
-  pars = NULL,
-  saccadeDelay = NULL
-)
+runSub(fnct = "logistic", ntrials = 300, fbst = TRUE, pars = NULL, omDelay = 0)
 }
 \arguments{
 \item{fnct}{character vector indicatin curve type}
@@ -21,14 +13,14 @@ runSub(
 
 \item{fbst}{use FBS+T assumption or not}
 
+\item{pars}{curve parameters}
+
+\item{omDelay}{Alternative to using \code{lasttime} for saccade time -- instead
+can take on a fixed value or bound RV}
+
 \item{window}{A time window to sample at different density}
 
 \item{windowRate}{sampling rate within window}
-
-\item{pars}{curve parameters}
-
-\item{saccadeDelay}{Alternative to using \code{lasttime} for saccade time -- instead
-can take on a fixed value}
 }
 \value{
 This runs simluation for single subject, returns a list
