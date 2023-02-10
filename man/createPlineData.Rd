@@ -10,8 +10,9 @@ createPlineData(
   ar1 = FALSE,
   pars = c(0, 0.5),
   manymeans = TRUE,
-  TIME = seq(-2, 2, length.out = 501),
-  distSig = 0.025
+  TIME = seq(-1, 1, length.out = 401),
+  distSig = 0.025,
+  paired = FALSE
 )
 }
 \arguments{
@@ -28,5 +29,6 @@ createPlineData(
 \item{TIME}{stuff}
 }
 \description{
-Create piecewise linear data
+Again, because maybe I'm retarded? except this time wihtout "pairing" the base
+and also yes i am retarded
 }
