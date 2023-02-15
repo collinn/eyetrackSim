@@ -24,13 +24,13 @@ sim_uniform <- runSim_pb(nsub = N, ntrials = nt,
                          fnct = "logistic", fbst = FBST,
                          omDelay = unf_rv)
 
-wb <- function() max(100, rweibull(1, shape = 1.8, scale = 224.9))
+wb <- function() rweibull(1, shape = 1.8, scale = 224.9)
 makeActiveBinding("wb_rv", wb, .GlobalEnv)
 sim_weibull <- runSim_pb(nsub = N, ntrials = nt,
                          fnct = "logistic", fbst = FBST,
                          omDelay = wb_rv)
 
-nn <- function() max(100, rnorm(1, 200, 15)) #abs(rnorm(1, 200, sd = 30))
+nn <- function() rnorm(1, 200, 15) #abs(rnorm(1, 200, sd = 30))
 makeActiveBinding("nn_rv", nn, .GlobalEnv)
 sim_normal <- runSim_pb(nsub = N, ntrials = nt,
                         fnct = "logistic", fbst = FBST,
@@ -137,5 +137,5 @@ fit_sac_beta <- bdotsFit(sim_beta$fixations,
 if (FBST) {
   save.image(file = "pb_data_sim_fbst_normal.RData")
 } else {
-  save.image(file = "pb_data_sim_no_fbst_normal.RData")
+  save.image(file = "no_min_pb_data_sim_no_fbst_normal.RData")
 }
