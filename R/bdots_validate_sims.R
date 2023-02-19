@@ -61,17 +61,7 @@ createData <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
     newpars2[,2] <- pmin(newpars2[,2], 1) # need peak < 1
   } else {
     ## Keep the original pars from newpars
-    orig_pars <- newpars
-    ## Then make one with mean 0
-    pars2 <- pars
-    pars2$mean[] <- 0
-    pars2$sigma <- pars2$sigma*pairMag
-    ## This gets the variance
-    varpars <- do.call(rmvnorm, as.list(c(n, pars2)))
-    ## And then we make our paired parameters
-    newpars2 <- orig_pars + varpars
-    newpars2[,1] <- abs(newpars2[,1]) # need base > 0
-    newpars2[,2] <- pmin(newpars2[,2], 1) # need peak < 1
+    newpars2 <- newpars
   }
   spars2 <- split(newpars2, row(newpars2))
   ipn <- ifelse(paired, 0, n)
@@ -115,10 +105,6 @@ singleMeans <- function(n, trials, pars, paired, ar1, time) {
   parsA <- matrix(pars, ncol = 4, nrow = n, byrow = TRUE)
   return(list(dts = dts, parsA = parsA, parsB = parsA))
 }
-
-# val <- logistic_f(c(0, 1, 0.002, 750), seq(0,1600,4))
-# sig <- 0.025
-# rho <- 0.8
 
 ## Pars are from jakes paper
 # but using more realistic values actually because xo of 200 is retarded
