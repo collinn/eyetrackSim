@@ -76,7 +76,7 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
     p[,2] <- pars[2]
   }
 
-  p <- abs(p)
+  p[,2] <- abs(p[,2])
   p1 <- p # will use this for other group
 
   spars <- split(p, row(p))
@@ -113,7 +113,7 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
     gbID <- n
   }
 
-  p <- abs(p)
+  p[,2] <- abs(p[,2])
   spars <- split(p, row(p))
   dts <- lapply(seq_len(n), function(x) {
     pp <- spars[[x]]
