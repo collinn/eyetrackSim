@@ -8,9 +8,9 @@ createPlineData(
   n = 25,
   trials = 100,
   ar1 = FALSE,
-  pars = c(0, 0.5),
+  pars = c(0, 0.05),
   manymeans = TRUE,
-  TIME = seq(-1, 1, length.out = 401),
+  TIME = seq(-0.1, 1, length.out = 500),
   distSig = 0.025,
   paired = FALSE
 )
