@@ -26,7 +26,6 @@ createData <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
     return(res)
   }
 
-
   ## If AR1 we can implement trials by impacting noise as such var = p(1-p)) / n
   # when n = 10 that gives us sig = 0.025 as used in trials
   if (ar1) {
