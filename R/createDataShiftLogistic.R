@@ -9,12 +9,13 @@
 #' @param pars starting parameters for groups, gotten empirically. Probably will never change this value
 #' @param paired is this paired data?
 #' @param pairMag how much variability between paired subjects
+#' @param dd size of difference in crossover parameter
 #' @description Create data for validating different situations in competing bdots implementations
 #' ar = 0.8 and sd in ar noise is 0.025
 #' @import mvtnorm
 #' @export
 createDataShiftLogistic <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
-                            paired = TRUE, pairMag = 1) {
+                            paired = TRUE, pairMag = 1, dd = 200) {
 
 
   time <- seq(0, 1600, by = 4)
@@ -42,7 +43,7 @@ createDataShiftLogistic <- function(n = 25, trials = 100, pars = EMPIRICAL_START
 
   ## Then we make our parameters for group 2
   newpars2 <- newpars
-  newpars2[, 4] <- newpars2[, 4] + 200
+  newpars2[, 4] <- newpars2[, 4] + dd
 
   spars2 <- split(newpars2, row(newpars2))
   ipn <- ifelse(paired, 0, n)

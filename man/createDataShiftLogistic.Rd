@@ -9,7 +9,8 @@ createDataShiftLogistic(
   trials = 100,
   pars = EMPIRICAL_START_PARS,
   paired = TRUE,
-  pairMag = 1
+  pairMag = 1,
+  dd = 200
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ createDataShiftLogistic(
 \item{paired}{is this paired data?}
 
 \item{pairMag}{how much variability between paired subjects}
+
+\item{dd}{size of difference in crossover parameter}
 }
 \description{
 Create data for validating different situations in competing bdots implementations
