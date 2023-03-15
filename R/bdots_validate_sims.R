@@ -90,15 +90,15 @@ singleMeans <- function(n, trials, pars, paired, ar1, time) {
   sigv <- 0.25 / sqrt(trials)
 
   group1 <- createSingleMeanSubs(n, ar1, pars = pars, sig = sigv, rho = 0.8,
-                                 trials = trials, time = time)
+                                 trials = trials, time = time, pairedID = TRUE)
 
   if (paired) {
     # This just adds gaussian noise to first group
     group2 <- createSingleMeanSubs(n, ar1, pars, rho = 0, sig = sigv, gg = "B",
-                                   trials = trials, time=time)
+                                   trials = trials, time=time, pairedID = TRUE)
   } else {
     group2 <- createSingleMeanSubs(n, ar1, pars, rho = 0.8, sig = sigv, gg = "B",
-                                   trials = trials, time = time)
+                                   trials = trials, time = time, pairedID = FALSE)
   }
   dts <- rbindlist(list(group1, group2))
   parsA <- matrix(pars, ncol = 4, nrow = n, byrow = TRUE)
@@ -108,14 +108,16 @@ singleMeans <- function(n, trials, pars, paired, ar1, time) {
 ## Pars are from jakes paper
 # but using more realistic values actually because xo of 200 is retarded
 createSingleMeanSubs <- function(n, ar1 = FALSE, pars = c(0, 0.9, 0.0025, 750),
-                                 rho = 0.8, sig = 0.025, gg = "A", trials, time) {
+                                 rho = 0.8, sig = 0.025, gg = "A", trials, time, pairedID) {
   if (length(pars) != 4) stop("4 pars for single mean subs")
 
   ## Indicates if paired
-  ipn <- ifelse(rho == 0, 0, n)
+  ipn <- ifelse(pairedID, 0, n)
+  ipn <- force(ipn)
 
   dts1 <- lapply(seq_len(n), function(x) {
-    dt <- data.table(id = x + ipn, # ipn is 0 if paired
+    datid <- force(x+ipn)
+    dt <- data.table(id = datid, # ipn is 0 if paired
                      time = time,
                      group = gg,
                      true = eyetrackSim:::logistic_f(pars, time))
