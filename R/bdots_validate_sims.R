@@ -7,19 +7,19 @@
 #' @param trials number of trials for binomial method
 #' @param pars starting parameters for groups, gotten empirically. Probably will never change this value
 #' @param paired is this paired data?
-#' @param pairMag how much variability between paired subjects
 #' @param ar1 do i create ar1 data instead of binomial
 #' @param manymeans do i do this the right way or the wrong way
+#' @param TIME time
 #'
 #' @description Create data for validating different situations in competing bdots implementations
 #' ar = 0.8 and sd in ar noise is 0.025
 #' @import mvtnorm
 #' @export
 createData <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
-                       paired = FALSE, pairMag = 0.05, ar1 = FALSE,
-                       manymeans = TRUE) {
+                       paired = FALSE, ar1 = FALSE,
+                       manymeans = TRUE, TIME = seq(0, 1600, by = 4)) {
 
-  time <- seq(0, 1600, by = 4)
+  time <- TIME
 
   if (!manymeans) {
     res <- singleMeans(n, trials, pars, paired, ar1, time)

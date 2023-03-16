@@ -9,9 +9,9 @@ createData(
   trials = 100,
   pars = EMPIRICAL_START_PARS,
   paired = FALSE,
-  pairMag = 0.05,
   ar1 = FALSE,
-  manymeans = TRUE
+  manymeans = TRUE,
+  TIME = seq(0, 1600, by = 4)
 )
 }
 \arguments{
@@ -23,11 +23,11 @@ createData(
 
 \item{paired}{is this paired data?}
 
-\item{pairMag}{how much variability between paired subjects}
-
 \item{ar1}{do i create ar1 data instead of binomial}
 
 \item{manymeans}{do i do this the right way or the wrong way}
+
+\item{TIME}{time}
 }
 \description{
 Create data for validating different situations in competing bdots implementations
