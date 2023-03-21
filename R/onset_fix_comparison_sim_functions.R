@@ -22,7 +22,7 @@
 #' @export
 runSim_compare <- function(nsub = 10, ntrials = 300,
                       fnct = "logistic", fbst = FALSE,
-                      omDelay = 0, group = "A", alt = FALSE) {
+                      omDelay = 0, group = "A", alt = FALSE, cores = 4) {
 
   ## Probably ought to do in parallel
   #subs <- replicate(nsub, runSub(fnct, ntrials, fbst), simplify = FALSE)
@@ -35,7 +35,7 @@ runSim_compare <- function(nsub = 10, ntrials = 300,
     nam <- colnames(tt$trialData)[c(nn, 1:(nn-1))]
     tt$trialData <- tt$trialData[, ..nam]
     tt
-  }, mc.cores = detectCores() - 2L)
+  }, mc.cores = cores)
 
   trialData <- lapply(subs, aggregateSub)
   trialData <- rbindlist(trialData)
@@ -238,7 +238,7 @@ runSub_compare <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
     }
     trialdata
 
-  }, mc.cores = detectCores()-1L)
+  }, mc.cores = 1L)
 
   ## Aggregate to single DT
   tt <- rbindlist(trialDataList)
