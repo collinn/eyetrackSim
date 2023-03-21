@@ -33,6 +33,20 @@ baseParams <- structure(list(fn = c(1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L),
                         class = c("data.table", "data.frame"))
 colnames(baseParams) <- c("fn", "param", "mean", "sd", "min", "max")
 
+## "Alt"
+# in logistic, change peak mean 0.885 to 0.8
+# for double gauss we change mu from 630 to 700
+baseParams2 <- structure(list(fn = c(1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L),
+                             param = c("mini", "peak", "slope", "cross", "mu", "ht", "sig1", "sig2", "base1", "base2"),
+                             mean = c(0.115, 0.8, 0.0016, 765, 700, 0.18, 130, 250, 0.05, 0.05),
+                             sd = c(0.12, 0.12, 0.00075, 85, 77, 0.05, 30, 120, 0.015, 0.015),
+                             min = c(0, 0.5, 0.0009, 300, 300, 0.05, 50, 50, 0, 0),
+                             max = c(0.3, 1, 0.01, 1100, 1300, 0.35, 250, 400, 0.15, 0.15)),
+                        row.names = c(NA, -10L),
+                        class = c("data.table", "data.frame"))
+colnames(baseParams2) <- c("fn", "param", "mean", "sd", "min", "max")
+
+
 ## Add linear terms
 
 ## Estimate values for slope and intercept

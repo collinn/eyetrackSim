@@ -1,10 +1,10 @@
 
-## File includes
-# runSim - run full simulation for nsub subjects, aggregate results
-# makeSubject - creates subject with curve pars
-# runSub - run simulation for single subject
+## Of course, what I am doing here should be discouraged. I am copying/pasting an
+# entire section from simFunctions.R in order to make special changes rather than
+# rewrite the functions to accomodate a broader range of possibilities. This unfortunately
+# is necessary due to constraints on time
 
-
+## Appending everything with _compare, but really the only change is to
 
 ## Run set of simulation on nsub subjects
 #' Run simulation for multiple subjects
@@ -14,19 +14,21 @@
 #' @param ntrials number of vwp trials per subject
 #' @param fbst use FBS+T assumption or not
 #' @param omDelay alternative mechanism for eye delay, can be constant or active bound var
+#' @param group name of group
+#' @param alt TRUE/FALSE this determines if we use baseParams or baseParams2 for creating data
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSim_pb <- function(nsub = 10, ntrials = 300,
-                   fnct = "logistic", fbst = FALSE,
-                   omDelay = 0) {
+runSim_compare <- function(nsub = 10, ntrials = 300,
+                      fnct = "logistic", fbst = FALSE,
+                      omDelay = 0, group = "A", alt = FALSE) {
 
   ## Probably ought to do in parallel
   #subs <- replicate(nsub, runSub(fnct, ntrials, fbst), simplify = FALSE)
   subs <- mclapply(seq_len(nsub), function(i) {
     j <- i # dumb that this is necessary
-    tt <- runSub(fnct, ntrials, fbst, omDelay = omDelay)
+    tt <- runSub_compare(fnct, ntrials, fbst, omDelay = omDelay, alt = alt)
     #set(tt, "trialData", i)
     tt$trialData[, id := i]
     nn <- ncol(tt$trialData)
@@ -37,11 +39,11 @@ runSim_pb <- function(nsub = 10, ntrials = 300,
 
   trialData <- lapply(subs, aggregateSub)
   trialData <- rbindlist(trialData)
-  trialData$group <- "A" # for bdots
+  trialData$group <- group # for bdots
 
   fixations <- lapply(subs, buildSaccadeSub)
   fixations <- rbindlist(fixations)
-  fixations$group <-  "A"
+  fixations$group <-  group
 
   subject <- lapply(subs, function(x) {
     x[['subInfo']]
@@ -73,24 +75,38 @@ runSim_pb <- function(nsub = 10, ntrials = 300,
 #' Create single subject for VWP trial
 #'
 #' @param fnct character vector indicatin curve type
+#' @param alt TRUE/FALSE this determines if we use baseParams or baseParams2 for creating data
 #'
 #' @returns This creates parameters for an individual subject,
 #' returning the fixation curve parameters, as well as eye  movement
 #' parameters for both standard and FBS+T
 #' @export
-makeSubject <- function(fnct = "logistic") {
+makeSubject_compare <- function(fnct = "logistic", alt) {
 
-  if (fnct == "logistic") {
-    bb <- copy(baseParams[fn == 1, ])
-    fn <- logistic_f
-  } else if (fnct == "doubleGauss") {
-    bb <- copy(baseParams[fn == 2, ])
-    fn <- doubleGauss_f
-  } else if (fnct == "linear") {
-    bb <- copy(baseParams[fn == 3, ])
-    fn <- linear_f
+  ## Which set of pars are used
+  if (!alt) {
+    if (fnct == "logistic") {
+      bb <- copy(baseParams[fn == 1, ])
+      fn <- logistic_f
+    } else if (fnct == "doubleGauss") {
+      bb <- copy(baseParams[fn == 2, ])
+      fn <- doubleGauss_f
+    } else if (fnct == "linear") {
+      bb <- copy(baseParams[fn == 3, ])
+      fn <- linear_f
+    }
+  } else {
+    if (fnct == "logistic") {
+      bb <- copy(baseParams2[fn == 1, ])
+      fn <- logistic_f
+    } else if (fnct == "doubleGauss") {
+      bb <- copy(baseParams2[fn == 2, ])
+      fn <- doubleGauss_f
+    } else if (fnct == "linear") {
+      bb <- copy(baseParams2[fn == 3, ])
+      fn <- linear_f
+    }
   }
-
 
   ## Parameters for the curve, right now, just logistic
   subPars <- vector("numeric", nrow(bb))
@@ -113,7 +129,6 @@ makeSubject <- function(fnct = "logistic") {
       maxFix <- max(fn(subPars, times))
     }
   }
-
 
   names(subPars) <- bb$param
 
@@ -157,15 +172,16 @@ makeSubject <- function(fnct = "logistic") {
 #' @param pars curve parameters
 #' @param omDelay Alternative to using `lasttime` for saccade time -- instead
 #' can take on a fixed value or bound RV
+#' @param alt TRUE/FALSE this determines if we use baseParams or baseParams2 for creating data
 #'
 #' @returns This runs simluation for single subject, returns a list
 #' containing information on subject, as well as trial data
 #' @export
-runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
-                   pars = NULL, omDelay = 0) {
+runSub_compare <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
+                   pars = NULL, omDelay = 0, alt) {
 
   ## Set up parameter stuff for subject
-  subInfo <- makeSubject(fnct)
+  subInfo <- makeSubject_compare(fnct, alt)
   if (is.null(pars)) {
     pars <- subInfo$pars
   } else {
@@ -228,34 +244,3 @@ runSub <- function(fnct = "logistic", ntrials = 300, fbst = TRUE,
   tt <- rbindlist(trialDataList)
   return(list(subInfo = subInfo, trialData = tt))
 }
-
-
-#' Aggregates raw trial data into vwp style whatever
-#'
-#' @param x A subject run from simulation
-#'
-#' @returns data.table with looks and proportions
-#' @export
-aggregateSub <- function(x) {
-  dat <- copy(x$trialData)
-  dat[, looks := mean(looks), by = times]
-  dat[, `:=`(trial = NULL, saccadenum = NULL)]
-  dat <- unique(dat)
-}
-
-#' Get start/end times from trial data for saccades
-#'
-#' @param x A subject run from simulation
-#'
-#' @returns data.table with entries being saccades and times
-#' @export
-buildSaccadeSub <- function(x) {
-  dat <- copy(x$trialData)
-
-  ## Find start and end times
-  dat[, `:=`(starttime = min(times), endtime = max(times)),
-      by = .(trial, saccadenum)]
-  dat[, `:=`(times = NULL, dur = endtime - starttime)]
-  dat <- unique(dat)
-}
-
