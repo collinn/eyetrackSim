@@ -63,7 +63,17 @@ createData_feb <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
     newpars2[,2] <- pmin(newpars2[,2], 1) # need peak < 1
   } else {
     ## Keep the original pars from newpars
-    newpars2 <- newpars
+    orig_pars <- newpars
+    ## Then make one with mean 0
+    pars2 <- pars
+    pars2$mean[] <- 0
+    pars2$sigma <- pars2$sigma*pairMag
+    ## This gets the variance
+    varpars <- do.call(rmvnorm, as.list(c(n, pars2)))
+    ## And then we make our paired parameters
+    newpars2 <- orig_pars + varpars
+    newpars2[,1] <- abs(newpars2[,1]) # need base > 0
+    newpars2[,2] <- pmin(newpars2[,2], 1) # need peak < 1
   }
   spars2 <- split(newpars2, row(newpars2))
   ipn <- ifelse(paired, 0, n)
