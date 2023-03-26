@@ -12,6 +12,7 @@
 #' @param pairMag how much variability between paired subjects
 #' @param ar1 do i create ar1 data instead of binomial
 #' @param manymeans do i do this the right way or the wrong way
+#' @param pairedType 1 indicates using exact same pars, 2 indicates adding noise with mean 0
 #'
 #' @description Create data for validating different situations in competing bdots implementations
 #' ar = 0.8 and sd in ar noise is 0.025
@@ -19,7 +20,7 @@
 #' @export
 createData_feb <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
                        paired = FALSE, pairMag = 0.05, ar1 = FALSE,
-                       manymeans = TRUE) {
+                       manymeans = TRUE, pairedType = 1) {
 
   time <- seq(0, 1600, by = 4)
 
@@ -62,18 +63,23 @@ createData_feb <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
     newpars2[,1] <- abs(newpars2[,1]) # need base > 0
     newpars2[,2] <- pmin(newpars2[,2], 1) # need peak < 1
   } else {
-    ## Keep the original pars from newpars
-    orig_pars <- newpars
-    ## Then make one with mean 0
-    pars2 <- pars
-    pars2$mean[] <- 0
-    pars2$sigma <- pars2$sigma*pairMag
-    ## This gets the variance
-    varpars <- do.call(rmvnorm, as.list(c(n, pars2)))
-    ## And then we make our paired parameters
-    newpars2 <- orig_pars + varpars
-    newpars2[,1] <- abs(newpars2[,1]) # need base > 0
-    newpars2[,2] <- pmin(newpars2[,2], 1) # need peak < 1
+    if (pairedType == 1) {
+      ## Keep the original pars from newpars
+      newpars2 <- newpars
+    } else if (pairedType == 2) { # here, add random noise
+      ## Keep the original pars from newpars
+      orig_pars <- newpars
+      ## Then make one with mean 0
+      pars2 <- pars
+      pars2$mean[] <- 0
+      pars2$sigma <- pars2$sigma*pairMag
+      ## This gets the variance
+      varpars <- do.call(rmvnorm, as.list(c(n, pars2)))
+      ## And then we make our paired parameters
+      newpars2 <- orig_pars + varpars
+      newpars2[,1] <- abs(newpars2[,1]) # need base > 0
+      newpars2[,2] <- pmin(newpars2[,2], 1) # need peak < 1
+    }
   }
   spars2 <- split(newpars2, row(newpars2))
   ipn <- ifelse(paired, 0, n)
