@@ -1,3 +1,5 @@
+library(mvtnorm)
+library(data.table)
 
 #' Function to create piecewise line
 #' @export
@@ -47,9 +49,6 @@ plinePars <- function(dat, y, time, params = NULL, ...) {
   return(list(formula = ff, params = params))
 }
 
-
-
-
 #' Create piecewise linear data
 #'
 #' Again, because maybe I'm retarded? except this time wihtout "pairing" the base
@@ -69,7 +68,7 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
                              distSig = 0.025, paired = FALSE) {
 
   ## Make first group
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig/5)
 
   if (!manymeans) {
     p[,1] <- pars[1]
@@ -96,7 +95,7 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
 
   # make second group
   pars <- c(0,0)
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig/5)
   # p[,1] <- p1[,1] # no more pairing
   #p[,2] <- p[,1] # make there be no slope
 
@@ -113,7 +112,8 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
     gbID <- n
   }
 
-  p[,2] <- abs(p[,2])
+  ## REMOVE THIS LINE: shifts the mean to ~ 0.1 instead of 0.
+  #p[,2] <- abs(p[,2])
   spars <- split(p, row(p))
   dts <- lapply(seq_len(n), function(x) {
     pp <- spars[[x]]
