@@ -18,7 +18,7 @@
 #' ar = 0.8 and sd in ar noise is 0.025
 #' @import mvtnorm
 #' @export
-createData_feb <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
+createData <- function(n = 25, trials = 100, pars = EMPIRICAL_START_PARS,
                        paired = FALSE, pairMag = 0.05, ar1 = FALSE,
                        manymeans = TRUE, pairedType = 1) {
 
