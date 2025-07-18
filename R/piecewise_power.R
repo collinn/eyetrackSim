@@ -68,7 +68,7 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
                              distSig = 0.025, paired = FALSE) {
 
   ## Make first group
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig/5)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
 
   if (!manymeans) {
     p[,1] <- pars[1]
@@ -95,7 +95,7 @@ createPlineData <- function(n = 25, trials = 100, ar1 = FALSE, pars = c(0,0.05),
 
   # make second group
   pars <- c(0,0)
-  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig/5)
+  p <- rmvnorm(n, mean = pars, sigma = diag(length(pars))*distSig)
   # p[,1] <- p1[,1] # no more pairing
   #p[,2] <- p[,1] # make there be no slope
 
